@@ -526,11 +526,30 @@ def move_vs_cb2_file():
             shutil.copy2(filename, 'output/' + filename)
     pass
 
+def move_buf_file():
+    # 设置当前目录
+    os.chdir(os.path.abspath(os.path.dirname(__file__)))
+    print("----------------------------------------------------------------")
+    print("开始移动.buf文件")
+
+    # 创建output目录，用于存放输出后的脚本
+    if not os.path.exists('output'):
+        os.mkdir('output')
+
+    # 移动vs-cb2骨骼文件
+    filenames = glob.glob('*.buf')
+    for filename in filenames:
+        if os.path.exists(filename):
+            print("正在处理： " + filename + " ....")
+            shutil.copy2(filename, 'output/' + filename)
+    pass
+
 
 if __name__ == "__main__":
     get_model_info()
     move_dds_file()
     move_vs_cb2_file()
+    move_buf_file()
 
     print("全部转换完成！")
     os.system("pause")
