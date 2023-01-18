@@ -421,48 +421,51 @@ def get_model_info():
     indices = sorted([re.findall('^\d+', x)[0] for x in glob.glob('*-vb0*txt')])
 
     for file_index in range(len(indices)):
-        # 获取IB文件的名称
-        ib_filename = str(glob.glob(indices[file_index] + '-ib*txt')[0])
-        print("正在处理: " + ib_filename + "  ....")
-
-        # 如果有IB文件，就把IB(index buffer)文件复制到output目录，直接复制不修改内容
-        count = 0
-        if os.path.exists(ib_filename):
-            # 遇到pointlist自动跳过且不复制到output目录
-            # 判断是否为topology
-            ib_file = open(ib_filename, "rb")
-            ib_file_size = os.path.getsize(ib_filename)
-            pointlist_flag = False
-            while ib_file.tell() <= ib_file_size:
-                line = ib_file.readline()
-
-                # 因为topology固定在第四行出现，所以如果读取到了第五行，说明没发现pointlist，就可以停止了
-                count = count + 1
-                if count > 5:
-                    break
-
-                if line.startswith(b"topology: "):
-                    topology = line[line.find(b"topology: ") + b"topology: ".__len__() :line.find(b"\r\n")]
-                    if topology == b"pointlist":
-                        pointlist_flag = True
-                        break
-            if pointlist_flag:
-                print("blender暂不支持导入pointlist文件，跳过...")
-                ib_file.close()
-                continue
-
-            ib_file.close()
-            # 复制ib文件到output目录
-            shutil.copy2(ib_filename, 'output/' + ib_filename)
-
-        # 第二步：处理VB文件
-        # print('正在处理的VB文件索引: ' + indices[i] + '...')
-        # 把这个IndexBuffer里的所有VB文件的内容融合到一个单独的VB文件中
+        # 获取IB文件列表，要么没有，要么只有一个
+        ib_files = glob.glob(indices[file_index] + '-ib*txt')
         # 首先获取一个所有VB文件的列表
         vb_filenames = sorted(glob.glob(indices[file_index] + '-vb*txt'))
         # ['000001-vb0=77fbb062-vs=e8425f64cfb887cd.txt',
         # '000001-vb1=369ab42b-vs=e8425f64cfb887cd.txt',
         # '000001-vb2=e7836825-vs=e8425f64cfb887cd.txt']
+
+        if ib_files.__len__() == 0:
+            print("由于blender暂不支持无ib文件类型，所以跳过不处理")
+            continue
+
+            # # 此段代码未来有可能会启用，暂时保留，目前不处理此类型
+            # # 长度为0说明没有IB文件，此时直接读取第一个vb文件判断是否为pointlist
+            # vb_filename = vb_filenames[0]
+            # print("正在处理特殊类型--无IB文件,只有VB文件: " + vb_filename + "  ....")
+            #
+            # # 校验第一个vb文件是否为pointlist类型
+            # if os.path.exists(vb_filename):
+            #     pointlist_flag = is_pointlist_file(vb_filename)
+            #     if pointlist_flag:
+            #         print("blender暂不支持导入pointlist文件，跳过...")
+            #         continue
+
+        else:
+            # 读取当前ib文件判断topology是否为Pointlist，如果是就跳过
+            ib_filename = str(glob.glob(indices[file_index] + '-ib*txt')[0])
+            print("正在处理: " + ib_filename + "  ....")
+
+            # 如果有IB文件，就把IB(index buffer)文件复制到output目录，直接复制不修改内容
+            if os.path.exists(ib_filename):
+                # 遇到pointlist自动跳过且不复制到output目录
+                # 判断是否为topology
+                pointlist_flag = is_pointlist_file(ib_filename)
+                if pointlist_flag:
+                    print("blender暂不支持导入pointlist文件，跳过...")
+                    continue
+
+                # 复制ib文件到output目录
+                shutil.copy2(ib_filename, 'output/' + ib_filename)
+
+
+        # 第二步：处理VB文件
+        # 把这个IndexBuffer里的所有VB文件的内容融合到一个单独的VB文件中
+
 
         # (1)读取Header部分数据
         vb_file = open(vb_filenames[0], 'rb')
@@ -545,11 +548,37 @@ def move_buf_file():
     pass
 
 
+def is_pointlist_file(filename):
+    ib_file = open(filename, "rb")
+    ib_file_size = os.path.getsize(filename)
+    pointlist_flag = False
+
+    count = 0
+    while ib_file.tell() <= ib_file_size:
+        line = ib_file.readline()
+
+        # 因为topology固定在第四行出现，所以如果读取到了第五行，说明没发现pointlist，就可以停止了
+        count = count + 1
+        if count > 5:
+            break
+
+        if line.startswith(b"topology: "):
+            topology = line[line.find(b"topology: ") + b"topology: ".__len__():line.find(b"\r\n")]
+            if topology == b"pointlist":
+                pointlist_flag = True
+                break
+    # 最后肯定要关闭文件
+    ib_file.close()
+    return pointlist_flag
+
+
 if __name__ == "__main__":
     get_model_info()
     move_dds_file()
     move_vs_cb2_file()
-    move_buf_file()
+
+    # 默认不移动buf文件，因为对不上
+    # move_buf_file()
 
     print("全部转换完成！")
     os.system("pause")
