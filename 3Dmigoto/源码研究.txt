@@ -1,0 +1,9 @@
+3dmigoto只能使用VisualStudio2017开发
+
+3dmigoto使用到了如下库：
+pcre2       一个Perl库，支持强大的正则表达式
+pcre2-8-32.lib
+pcre2-8-32d.lib
+pcre2-8-64.lib
+pcre2-8-64d.lib
+
