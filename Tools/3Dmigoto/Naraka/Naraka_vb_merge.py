@@ -511,7 +511,7 @@ def move_dds_file():
             shutil.copy2(filename, 'output/' + filename)
 
 
-def move_vs_cb2_file():
+def move_vs_cb_file():
     # 设置当前目录
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
     print("----------------------------------------------------------------")
@@ -522,7 +522,7 @@ def move_vs_cb2_file():
         os.mkdir('output')
 
     # 移动vs-cb2骨骼文件
-    filenames = glob.glob('*vs-cb2*')
+    filenames = glob.glob('*vs-cb*')
     for filename in filenames:
         if os.path.exists(filename):
             print("正在处理： " + filename + " ....")
@@ -575,7 +575,7 @@ def is_pointlist_file(filename):
 if __name__ == "__main__":
     get_model_info()
     move_dds_file()
-    move_vs_cb2_file()
+    move_vs_cb_file()
 
     # 默认不移动buf文件，因为对不上
     # move_buf_file()
