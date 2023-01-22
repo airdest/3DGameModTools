@@ -24,5 +24,5 @@ https://kook.top/GBwMAn
 
 特别鸣谢Helix mod社区, 以及chiri开源的3dmigoto！
 
-
+特别鸣谢SilentNightSound的GIMI项目所提供的学习参考！
 
