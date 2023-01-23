@@ -714,8 +714,8 @@ if __name__ == "__main__":
     # It would be more efficient to collect this and pointlist in one pass, but framedumps are usually fairly small
     #   and there are some cases where we want to keep these logically separated
     """
-
-    relevant_ids, first_vss = collect_relevant_ids(frame_dump_folder, args.vb)
+    vb_hash = ""
+    relevant_ids, first_vss = collect_relevant_ids(frame_dump_folder, vb_hash)
 
 
 
