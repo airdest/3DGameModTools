@@ -572,17 +572,6 @@ def is_pointlist_file(filename):
     return pointlist_flag
 
 
-if __name__ == "__main__":
-    # get_model_info()
-    # move_dds_file()
-    # move_vs_cb_file()
-
-    # 默认不移动buf文件，因为对不上
-    # move_buf_file()
-
-    print("全部转换完成！")
-    os.system("pause")
-
 
 def collect_pointlist_candidates(frame_dump_folder, root_vs_hash="e8425f64cfb887cd"):
     """
@@ -598,16 +587,24 @@ def collect_pointlist_candidates(frame_dump_folder, root_vs_hash="e8425f64cfb887
     :param root_vs_hash:
     :return:
     """
+
     print("Searching for VB corresponding with root VS")
     point_vbs = {}
     frame_dump_files = os.listdir(frame_dump_folder)
     for filename in frame_dump_files:
+
         draw_id = filename.split("-")[0]
+
         if root_vs_hash in filename and "-vb0=" in filename and os.path.splitext(filename)[1] == ".txt":
+
             with open(os.path.join(frame_dump_folder, filename), "r") as f:
+
                 vertex_count = int([x for x in f.readlines() if "vertex count:" in x][0].split(": ")[1])
+
             print(f"Found position VB: {filename}, vertex count: {vertex_count}")
+
             point_vbs[draw_id] = {"vertex_count": vertex_count, "position_vb": filename}
+
         if root_vs_hash in filename and "-vb1=" in filename and os.path.splitext(filename)[1] == ".txt":
             print(f"Found blend VB: {filename},  vertex count: {vertex_count}")
             point_vbs[draw_id]["blend_vb"] = filename
@@ -618,7 +615,107 @@ def collect_pointlist_candidates(frame_dump_folder, root_vs_hash="e8425f64cfb887
 
     return point_vbs
 
+# Collects all draw ids that correspond to the vb hashes the user entered
+# These usually contain things like the textures, ibs and color/texcoord
+# They also contain position data, but these buffers are after the character have been posed so they are less useful
+def collect_relevant_ids(frame_dump_folder, draw_vb_hashes, use_lower=False):
+    relevant_ids = []
+    relevant_ids_size = []
+    relevant_ids_first_index = []
+    first_vss = []
+    frame_dump_files = os.listdir(frame_dump_folder)
+    for draw_vb_hash in draw_vb_hashes:
+        texture_only_flag = False
+        # X is being used to control what draw ids have textures only dumped, and is propagated through the variables
+        if draw_vb_hash[0].lower() == "x":
+            draw_vb_hash = draw_vb_hash[1:]
+            texture_only_flag = True
+        relevant_id_group = []
+        relevant_id_size_group = []
+        relevant_ids_first_index_group = []
+        first_vs = ""
+        for filename in frame_dump_files:
+            if draw_vb_hash in filename:
+                draw_id = filename.split("-")[0]
+                # The first vs used to draw the character isn't currently used, but there is some potential future use
+                if not first_vs and int(draw_id) > 10:
+                    first_vs = filename.split("vs=")[1].split("-")[0]
+                    print(f"\nFound first VS: {first_vs}")
+                # I still don't really understand what the lower ids that show up sometimes are for, but there needs
+                #   to be some method of allowing them to be used in case the object we are scraping is one of the few in the scene
+                if draw_id not in relevant_id_group and (use_lower or int(draw_id)>10):
+                    if texture_only_flag:
+                        draw_id = "x" + draw_id
+                    relevant_id_group.append(draw_id)
+                    if os.path.splitext(filename)[1] == ".buf":
+                        filename = filename.replace(".buf", ".txt")
+                    with open(os.path.join(frame_dump_folder, filename), "r") as f:
+                        vertex_count = int([x for x in f.readlines() if "vertex count:" in x][0].split(": ")[1])
 
+                    ib_filename = [x for x in frame_dump_files if draw_id in x and "-ib=" in x and ".txt" in x]
+                    if ib_filename:
+                        with open(os.path.join(frame_dump_folder, ib_filename[0]), "r") as f:
+                            first_index = int([x for x in f.readlines() if "first index:" in x][0].split(": ")[1])
+
+                    relevant_ids_first_index_group.append(str(first_index).rjust(6))
+                    relevant_id_size_group.append(str(vertex_count).rjust(6))
+
+
+        relevant_ids.append(relevant_id_group)
+        relevant_ids_size.append(relevant_id_size_group)
+        relevant_ids_first_index.append(relevant_ids_first_index_group)
+        first_vss.append(first_vs)
+
+    if not use_lower and not any(relevant_ids):
+        print("WARNING: unable to find any relevant ids. Double checking IDs <10 for possibilities")
+        relevant_ids, first_vss = collect_relevant_ids(frame_dump_folder, draw_vb_hashes, use_lower=True)
+    else:
+        print("Relevant IDs:")
+        for i in range(len(relevant_ids)):
+            print(f"\tComponent{i+1} IDs         : {relevant_ids[i]}")
+            print(f"\tComponent{i+1} Vertex Count: {relevant_ids_size[i]}")
+            print(f"\tComponent{i+1} First Index : {relevant_ids_first_index[i]}")
+
+    return relevant_ids, first_vss
+
+if __name__ == "__main__":
+    # get_model_info()
+    # move_dds_file()
+    # move_vs_cb_file()
+
+    # 默认不移动buf文件，因为对不上
+    # move_buf_file()
+
+    # 防止覆盖文件，给出提示
+    character = "guqinghan"
+    print("创建输出目录：")
+    if not os.path.isdir(character):
+        os.mkdir(character)
+    else:
+        print(
+            f"{character} 文件夹中的所有东西都将被覆盖 - 确保你备份了重要的文件. 按下任意键继续")
+        input()
+
+    # 获取当前文件夹
+    frame_dump_folder = [x for x in os.listdir("./") if "FrameAnalysis" in x][-1]
+
+    """
+    First pass to give us the VB for the position and blend data
+    Now, instead of just collecting one object corresponding to the root vs we collect all of them and double check
+      later that the one we collected matches the vertex size of the texcoord
+    """
+    collect_pointlist_candidates(frame_dump_folder)
+
+
+
+    """
+    # Second pass gives us all the relevant IDs that correspond to the vbs we are searching for
+    # Have extended this to now collect data for multiple vbs at once for characters drawn across buffers
+    # It would be more efficient to collect this and pointlist in one pass, but framedumps are usually fairly small
+    #   and there are some cases where we want to keep these logically separated
+    """
+
+    relevant_ids, first_vss = collect_relevant_ids(frame_dump_folder, args.vb)
 
 
 

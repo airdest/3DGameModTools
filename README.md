@@ -1,10 +1,12 @@
 # 3D游戏mod技术交流
 
-3D游戏技术交流kook频道：
+3D游戏技术交流 Discord：
 
-https://kook.top/GBwMAn
+https://discord.gg/jRUeh8sx2m
 
-支持作者：爱发电APP id：永动黑桃六
+有问题请在github提issue或在discord中反馈。
+
+支持作者：爱发电APP id：永动黑桃六。
 
 感谢爱发电所有小伙伴的支持！感谢各平台粉丝们的支持！
 
