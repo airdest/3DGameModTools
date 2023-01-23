@@ -1,10 +1,6 @@
 # 3D游戏mod技术交流
 
-3D游戏技术交流 Discord：
-
-https://discord.gg/jRUeh8sx2m
-
-有问题请在github提issue或在discord中反馈。
+有问题请在github提issue。
 
 支持作者：爱发电APP id：永动黑桃六。
 
