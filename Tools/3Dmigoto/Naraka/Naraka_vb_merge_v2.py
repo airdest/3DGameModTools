@@ -584,10 +584,20 @@ if __name__ == "__main__":
     os.system("pause")
 
 
-
-
-
-def collect_pointlist_candidates(frame_dump_folder, root_vs_hash="653c63ba4a73ca8b"):
+def collect_pointlist_candidates(frame_dump_folder, root_vs_hash="e8425f64cfb887cd"):
+    """
+    # Collect potential candidates for the pointlist buffers
+    # These contain information about the model before it is posed, along with blend-related data
+    # May not exist for certain objects, depending how they are bound to bones, and have seen cases where there is a
+    #   size mismatch between these buffers and the later ones that are drawn to the screen
+    # Every example I have seen so far uses VS hash 653c63ba4a73ca8b (even between games), but not sure if that is unique or not
+    # 这里选出所有可能的pointlist buffer？
+    # 这些pointlist文件包含了人物在摆出姿势之前的动作信息，并且包含渲染相关数据，也许在一定的物体中不存在，这取决于骨骼如何绑定，
+    # 永动无问疑似  e8425f64cfb887cd
+    :param frame_dump_folder:
+    :param root_vs_hash:
+    :return:
+    """
     print("Searching for VB corresponding with root VS")
     point_vbs = {}
     frame_dump_files = os.listdir(frame_dump_folder)
