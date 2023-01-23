@@ -1,32 +1,27 @@
-# 3D游戏mod技术交流
+# 3D Game Mod 
 
-3D游戏技术交流 Discord：
+Join Discord for communicate：
 
 https://discord.gg/jRUeh8sx2m
 
-有问题请在github提issue或在discord中反馈。
+If You have any question or advice, 
 
-支持作者：爱发电APP id：永动黑桃六。
+You can open an issue on github or give a feedback on discord, Thank you !
 
-感谢爱发电所有小伙伴的支持！感谢各平台粉丝们的支持！
 
-所有资源都是免费分享，不要相信任何收费的骗子，不要轻信陌生人加好友。
+# DISCLAIMER
+I strongly recommend only using private servers or Single-Player Game for modding. 
 
-# 免责声明
-1.本项目仅作为作者分享学习资料及笔记之用，仅供学习交流使用，下载后请于24小时内删除。
+Using these tools on Muilti-Player Game servers carries a high risk of being banned. 
 
-2.本项目不可用于商业目的，由使用此github内容所引发的一切行为与后果，与本项目作者无关。
+I do not condone the use of these tools and programs on official servers, 
 
-3.使用者在使用本项目内容前应具有明确的法律意识和责任意识以及社会道德，使用后造成的结果与责任由使用者自行承担。
+and take no responsibility for any consequences as a result if you do.
 
-4.使用者应遵守所在地法律法规，禁止使用本项目内容从事违法违规行为。
+# Acknowledgements
+Thanks a lot to bob3b, DarkStarSword, for tutorial and code reference!
 
-5.最终解释权归本项目作者所有。
+Thanks alot to Helixmod, and chiri for open sourcing 3dmigoto！
 
-# 特别鸣谢
-特别鸣谢bob3b, DarkStarSword提供的教程和代码参考！
-
-特别鸣谢Helix mod社区, 以及chiri开源的3dmigoto！
-
-特别鸣谢SilentNightSound的GIMI项目所提供的学习参考！
+Thanks for SilentNightSound'GIMI for code reference!
 
