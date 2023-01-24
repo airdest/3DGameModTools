@@ -1,9 +1,5 @@
 # 3D Game Mod 
 
-Join Discord for communicate：
-
-https://discord.gg/jRUeh8sx2m
-
 If You have any question or advice, 
 
 You can open an issue on github or give a feedback on discord, Thank you !
