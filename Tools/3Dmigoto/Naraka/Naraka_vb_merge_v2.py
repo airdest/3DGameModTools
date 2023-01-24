@@ -630,6 +630,7 @@ def collect_relevant_ids(frame_dump_folder, draw_vb_hashes, use_lower=False):
         if draw_vb_hash[0].lower() == "x":
             draw_vb_hash = draw_vb_hash[1:]
             texture_only_flag = True
+
         relevant_id_group = []
         relevant_id_size_group = []
         relevant_ids_first_index_group = []
@@ -638,6 +639,7 @@ def collect_relevant_ids(frame_dump_folder, draw_vb_hashes, use_lower=False):
             if draw_vb_hash in filename:
                 draw_id = filename.split("-")[0]
                 # The first vs used to draw the character isn't currently used, but there is some potential future use
+                # TODO why?
                 if not first_vs and int(draw_id) > 10:
                     first_vs = filename.split("vs=")[1].split("-")[0]
                     print(f"\nFound first VS: {first_vs}")
@@ -704,13 +706,15 @@ if __name__ == "__main__":
     Now, instead of just collecting one object corresponding to the root vs we collect all of them and double check
       later that the one we collected matches the vertex size of the texcoord
     """
-    collect_pointlist_candidates(frame_dump_folder)
+    point_vbs = collect_pointlist_candidates(frame_dump_folder)
 
 
 
     """
     # Second pass gives us all the relevant IDs that correspond to the vbs we are searching for
+        找到给出的vb地址的相关联的id
     # Have extended this to now collect data for multiple vbs at once for characters drawn across buffers
+        
     # It would be more efficient to collect this and pointlist in one pass, but framedumps are usually fairly small
     #   and there are some cases where we want to keep these logically separated
     """
