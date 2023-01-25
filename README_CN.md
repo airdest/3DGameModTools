@@ -26,10 +26,3 @@
 特别鸣谢Helix mod社区, 以及chiri开源的3dmigoto！
 
 特别鸣谢SilentNightSound的GIMI项目所提供的学习参考！
-
-# 闭源声明
-由于一些原因，项目闭源，教程，资源全部移至discord，仅提供试用版，防止滥用传播。
-
-github开源的挂载软件是旧版本，没有discord里的稳定，这是为了保证discord内的玩家账号尽量不被封
-
-完整18+ mod资源，0基础到源码编译全套教程，最新mod技术交流，请加入discord正式成员。
