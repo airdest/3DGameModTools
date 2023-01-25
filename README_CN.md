@@ -3,7 +3,10 @@
 有问题请在github提issue。
 
 支持作者：爱发电APP id：永动黑桃六。
+
 爱发电支持作者，可加入discord群聊。
+
+discord群聊游客频道链接： https://discord.gg/3tfsfxarxp
 
 感谢爱发电所有小伙伴的支持！感谢各平台粉丝们的支持！
 
@@ -26,3 +29,7 @@
 特别鸣谢Helix mod社区, 以及chiri开源的3dmigoto！
 
 特别鸣谢SilentNightSound的GIMI项目所提供的学习参考！
+
+# 3dmigoto教程闭源说明
+
+为防止滥用，3dmigoto所有教程全部改为discord正式成员内部分享，谢谢支持！
