@@ -1,10 +1,10 @@
 # 3D游戏mod技术交流
 
-有问题请在github提issue。
+有问题请在github提issue或在discord的mod-info频道提问。
 
 支持作者：爱发电APP id：永动黑桃六。
 
-爱发电支持作者，可加入discord群聊。
+爱发电支持作者，可加入discord群聊并成为正式成员。
 
 discord群聊游客频道链接： https://discord.gg/3tfsfxarxp
 
