@@ -680,6 +680,7 @@ def collect_relevant_ids(frame_dump_folder, draw_vb_hashes, use_lower=False):
 
     return relevant_ids, first_vss
 
+
 if __name__ == "__main__":
     # get_model_info()
     # move_dds_file()

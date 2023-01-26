@@ -12,47 +12,49 @@ import json
 import re
 
 def main():
-    parser = argparse.ArgumentParser(description="Collects and compiles model data from 3dmigoto frame dumps")
-    # TODO vb的hash地址，ib地址好像也行
-    parser.add_argument("-vb", nargs="+", type=str, help="Main VBs character is drawn with. Adding X as a prefix to the hash dumps only textures and not model data (e.g. for faces)")
-    # 指定输出的文件夹名称和输出文件的名称，用作区分
-    parser.add_argument("-n", "--name", type=str, help="Name of character to use in folders and output files")
-    # 组件名称，如果不指定则默认为数字
-    parser.add_argument("-c", "--component_names", nargs="*", type=stripped_string, help="Custom names to use for the components. If not specified, defaults to numbers")
-    # 要分析的dump文件夹名称，如果不指定则使用最近的一个
-    parser.add_argument("-f", "--framedump", type=str, help="Name of framedump folder (if not specified, uses most recent)")
-    # 角色模型的根源VS ★★★上游戏查看去除后效果 ,果然去除后丢失骨骼动画，所以永劫的也是一样有一个根源VS
-    parser.add_argument("-vs", type=str, default="653c63ba4a73ca8b", help="Root VS for character model")
-    # 强制性从某个draw id上收集 TODO 这里是做什么用的？
-    parser.add_argument("--force", "--force_draw", nargs="+", help="Force parser to collect from certain draw ids")
-    # 强制性从某个根对象上解析 TODO 这里是干啥的？
-    parser.add_argument("--force_object", help="Force parser to collect from certain root object")
-    # TODO ？？？
-    parser.add_argument("--remove_sanity", action='store_true', help="Turns off the sanity checks, useful for troubleshooting. "
-                                                                     "Also how I'm feeling after debugging this all day")
-    # TODO ？？？为什么强制收集blend 数据
-    parser.add_argument("--has_blend", action='store_true', help="Forces parser to attempt to collect blend data")
-    # TODO 为什么强制跳过BLEND数据，有什么区别，Blend数据是做什么用的
-    parser.add_argument("--no_blend", action='store_true', help="Forces parser to skip collecting blend data")
-    # 除了texture map外还有法线贴图
-    parser.add_argument("--has_normalmap", action='store_true', help="Model has normal maps in addition to other texture maps")
+    # parser = argparse.ArgumentParser(description="Collects and compiles model data from 3dmigoto frame dumps")
+    # # TODO vb的hash地址，ib地址好像也行
+    # parser.add_argument("-vb", nargs="+", type=str, help="Main VBs character is drawn with. Adding X as a prefix to the hash dumps only textures and not model data (e.g. for faces)")
+    # # 指定输出的文件夹名称和输出文件的名称，用作区分
+    # parser.add_argument("-n", "--name", type=str, help="Name of character to use in folders and output files")
+    # # 组件名称，如果不指定则默认为数字
+    # parser.add_argument("-c", "--component_names", nargs="*", type=stripped_string, help="Custom names to use for the components. If not specified, defaults to numbers")
+    # # 要分析的dump文件夹名称，如果不指定则使用最近的一个
+    # parser.add_argument("-f", "--framedump", type=str, help="Name of framedump folder (if not specified, uses most recent)")
+    # # 角色模型的根源VS ★★★上游戏查看去除后效果 ,果然去除后丢失骨骼动画，所以永劫的也是一样有一个根源VS
+    # parser.add_argument("-vs", type=str, default="653c63ba4a73ca8b", help="Root VS for character model")
+    # # 强制性从某个draw id上收集 TODO 这里是做什么用的？
+    # parser.add_argument("--force", "--force_draw", nargs="+", help="Force parser to collect from certain draw ids")
+    # # 强制性从某个根对象上解析 TODO 这里是干啥的？
+    # parser.add_argument("--force_object", help="Force parser to collect from certain root object")
+    # # TODO ？？？
+    # parser.add_argument("--remove_sanity", action='store_true', help="Turns off the sanity checks, useful for troubleshooting. "
+    #                                                                  "Also how I'm feeling after debugging this all day")
+    # # TODO ？？？为什么强制收集blend 数据
+    # parser.add_argument("--has_blend", action='store_true', help="Forces parser to attempt to collect blend data")
+    # # TODO 为什么强制跳过BLEND数据，有什么区别，Blend数据是做什么用的
+    # parser.add_argument("--no_blend", action='store_true', help="Forces parser to skip collecting blend data")
+    # # 除了texture map外还有法线贴图
+    # parser.add_argument("--has_normalmap", action='store_true', help="Model has normal maps in addition to other texture maps")
+    #
+    # args = parser.parse_args()
 
-    args = parser.parse_args()
-
-    # 去除角色名称里的空格
-    character = args.name.replace(" ", "")
+    # v2:直接指定输出的角色名，注意不能带有空格，当然即使有后面也会去掉
+    character = "guqinghan"
+    # 去除空格
+    character = character.replace(" ", "")
 
     # 基础分类，头，身体，衣服，其它
     base_classification = ["Head", "Body", "Dress", "Extra"]
 
     # Even if user doesn't specify specific framedump, code will now default to the most recent one
     # Frame analysis folders have leading 0s for the date, so default order will be sorted correctly
-    if args.framedump:
-        frame_dump_folder = args.framedump
-    else:
-        print("Looking for most recent frame dump folder")
-        frame_dump_folder = [x for x in os.listdir("../../../GameFixs/N卡/Naraka") if "FrameAnalysis" in x][-1]
-        print(f"Found! Folder: {frame_dump_folder}")
+    # V2:默认自动寻找当前目录下的dump文件夹
+    print("Looking for most recent frame dump folder")
+    # frame_dump_folder = [x for x in os.listdir("./") if "FrameAnalysis" in x][-1]
+
+    frame_dump_folder = "./FrameAnalysis-2023-01-22-193742"
+    print(f"Found! Folder: {frame_dump_folder}")
 
     # Was getting tired of accidentally deleting folder contents when making typos
     print("Creating output folder")
@@ -62,39 +64,59 @@ def main():
         print(f"WARNING: Everything currently in the {character} folder will be overwritten - make sure any important files are backed up. Press any button to continue")
         input()
 
+    # 这里我们换成永劫无间的根源VS
+    # vs_root_hash_naraka = "e8425f64cfb887cd"
+    vs_root_hash_naraka = "653c63ba4a73ca8b" # 用于原神测试
     # First pass to give us the VB for the position and blend data
     # Now, instead of just collecting one object corresponding to the root vs we collect all of them and double check
     #   later that the one we collected matches the vertex size of the texcoord
-    point_vbs = collect_pointlist_candidates(frame_dump_folder, args.vs)
+    point_vbs = collect_pointlist_candidates(frame_dump_folder, vs_root_hash_naraka)
 
+    # v2: 分析指定的ib或vb的hash  这里我们填写顾清寒泳装衣服的ib地址
+    # vb_hash_guqinghan_yifu = "a86d5d6c"
+    vb_hash_guqinghan_yifu = "098bced6" # 用于原神测试
     # Second pass gives us all the relevant IDs that correspond to the vbs we are searching for
     # Have extended this to now collect data for multiple vbs at once for characters drawn across buffers
     # It would be more efficient to collect this and pointlist in one pass, but framedumps are usually fairly small
     #   and there are some cases where we want to keep these logically separated
-    relevant_ids, first_vss = collect_relevant_ids(frame_dump_folder, args.vb)
+    relevant_ids, first_vss = collect_relevant_ids(frame_dump_folder, vb_hash_guqinghan_yifu)
 
     # Third pass to collect IBs, texcoord VB, and diffuse/light maps
     # At this point, we are assuming that the positional data is going to come from the pointlists - if that assumption
     #   is proven wrong later on in the script, we will use the position vbs collected here instead
-    model_data, position_vbs, texcoord_vbs = collect_model_data(frame_dump_folder, relevant_ids, args.force)
+    # 这里填写args.force为None
+    model_data, position_vbs, texcoord_vbs = collect_model_data(frame_dump_folder, relevant_ids, None)
 
     # For constructing the .ini file
     # New file structure allows for multiple vbs to be contained in a single file
     hash_data = []
 
+    # 设置组件名称 args.component_names
+    component_names = None
+    # 设置args.no_blend
+    no_blend = None
+    # 设置args.has_blend
+    has_blend = None
+    # 设置 args.force_object
+    force_object = None
+    # 设置 has_normalmap
+    has_normalmap = None
+    # 设置 remove_sanity
+    remove_sanity = None
+
     # We are now potentially constructing multiple objects - in the case where length=1, behaviour is the same as before
     for i in range(len(model_data)):
 
         hash_data.append({})
-        if args.component_names:
-            hash_data[i]["component_name"] = args.component_names[i].replace(" ", "")
+        if component_names:
+            hash_data[i]["component_name"] = component_names[i].replace(" ", "")
         elif i>0:
             hash_data[i]["component_name"] = f"{i+1}"
         else:
             hash_data[i]["component_name"] = ""
 
         texture_only = False
-        if args.vb[i][0].lower() == "x":
+        if vb_hash_guqinghan_yifu[i][0].lower() == "x":
             print("Skipping buffer data, only collecting textures")
             vb_merged = ""
             position_vb = ""
@@ -125,15 +147,15 @@ def main():
             print("Attempting to find corresponding scene object")
             point_vb_candidates = [x for x in point_vbs if point_vbs[x]["vertex_count"] == len(texcoord)]
 
-            if args.has_blend and not point_vb_candidates:
+            if has_blend and not point_vb_candidates:
                 print("ERORR: Unable to find matching blend coordinates. Please specify the draw IDs to use with --force")
                 return
 
-            if not args.no_blend and not point_vb_candidates:
+            if not no_blend and not point_vb_candidates:
                 print("WARNING: Unable to find vbs to use for position information.")
                 return
 
-            if args.no_blend or (not args.force_object and not point_vb_candidates):
+            if no_blend or (not force_object and not point_vb_candidates):
                 # If we can't find a correct pointlist, fall back to using the positional data from collect_model_data
                 print(f"WARNING: Unable to find any point vbs with length that matches texcoord ({len(texcoord)}). Defaulting to use position data from higher draw IDs")
                 print("Skipping blend data collection")
@@ -149,8 +171,8 @@ def main():
                     point_vb_candidates =  [selection]
 
                 # Forces a specific object, sometimes there is a mismatch so this can be used for troubleshooting
-                if args.force_object:
-                    correct_vb_id = args.force_object
+                if force_object:
+                    correct_vb_id = force_object
                 else:
                     correct_vb_id = point_vb_candidates[0]
                 print(f"Using object with ID {correct_vb_id}")
@@ -163,7 +185,7 @@ def main():
                 print(f"Collecting blend data from {blend_vb}")
                 blend, blend_format = collect_buffer_data(frame_dump_folder, blend_vb, ("BLENDWEIGHT:", "BLENDINDICES:"))
 
-                hash_data[i]["root_vs"] = args.vs
+                hash_data[i]["root_vs"] = vs_root_hash_naraka
 
 
             # Positional data exists for both of the above cases, though the file we get the info from differs
@@ -175,7 +197,7 @@ def main():
 
 
             # If we have to continue because of super force, need to equalize the files
-            if args.remove_sanity:
+            if remove_sanity:
                 max_vertices = min(len(position), len(blend), len(texcoord))
                 position = position[:max_vertices]
                 blend = blend[:max_vertices]
@@ -215,7 +237,7 @@ def main():
             vb_merged = construct_combined_buffer(buffer_data, element_format)
 
         # Now that we have all the buffer data, assemble and output the final results to the folder
-        output_results(frame_dump_folder, character, args.component_names, model_data, vb_merged, position_vb, i, texture_only, base_classification, args.has_normalmap)
+        output_results(frame_dump_folder, character, component_names, model_data, vb_merged, position_vb, i, texture_only, base_classification,has_normalmap)
 
         # And save the hash data to the dictionary
         print("\nAdding character hash info to hash file")
@@ -230,14 +252,14 @@ def main():
             blend_vb_hash = ""
             texcoord_vb_hash = ""
             ib_hash = model_data[i][0][0].split("=")[1].split("-")[0]
-            draw_vb = args.vb[i]
+            draw_vb = vb_hash_guqinghan_yifu[i]
         else:
             print(model_data)
             position_vb_hash = position_vb.split("=")[1].split("-")[0]
             blend_vb_hash = blend_vb.split("=")[1].split("-")[0]
             texcoord_vb_hash = texcoord_vbs[i].split("=")[1].split("-")[0]
             ib_hash = model_data[i][0][0].split("=")[1].split("-")[0]
-            draw_vb = args.vb[i]
+            draw_vb = vb_hash_guqinghan_yifu[i]
         object_indexes = sorted(model_data[i].keys())
         texture_hashes = []
         for index in object_indexes:
@@ -249,16 +271,16 @@ def main():
                     seen_hashes.add(texture_hash)
                     extension = ".dds"
                     if j==0:
-                        if args.has_normalmap:
+                        if has_normalmap:
                             texture_type = "NormalMap"
                         else:
                             texture_type = "Diffuse"
                     elif j==1:
-                        if args.has_normalmap:
+                        if has_normalmap:
                             texture_type = "Diffuse"
                         else:
                             texture_type = "LightMap"
-                    elif j==2 and args.has_normalmap:
+                    elif j==2 and has_normalmap:
                         texture_type = "LightMap"
                     else:
                         extension, texture_type = identify_texture(frame_dump_folder, texture)
@@ -328,40 +350,63 @@ def collect_pointlist_candidates(frame_dump_folder, root_vs_hash="e8425f64cfb887
 # These usually contain things like the textures, ibs and color/texcoord
 # They also contain position data, but these buffers are after the character have been posed so they are less useful
 def collect_relevant_ids(frame_dump_folder, draw_vb_hashes, use_lower=False):
+
+    # print("draw_vb_hashs") 这里只有一个我们传过来的
+    # print(draw_vb_hashes)
+
     relevant_ids = []
     relevant_ids_size = []
     relevant_ids_first_index = []
     first_vss = []
     frame_dump_files = os.listdir(frame_dump_folder)
     for draw_vb_hash in draw_vb_hashes:
+
+        #TODO 这个x的用法还没搞清楚，也还没有见过类似的x
         texture_only_flag = False
         # X is being used to control what draw ids have textures only dumped, and is propagated through the variables
         if draw_vb_hash[0].lower() == "x":
             draw_vb_hash = draw_vb_hash[1:]
             texture_only_flag = True
+
+
         relevant_id_group = []
         relevant_id_size_group = []
         relevant_ids_first_index_group = []
         first_vs = ""
+
         for filename in frame_dump_files:
+
             if draw_vb_hash in filename:
+                print(filename)
                 draw_id = filename.split("-")[0]
+                draw_id_int = int(draw_id)
+                print(draw_id_int)
                 # The first vs used to draw the character isn't currently used, but there is some potential future use
-                if not first_vs and int(draw_id) > 10:
+                if not first_vs and draw_id_int > 10:
                     first_vs = filename.split("vs=")[1].split("-")[0]
                     print(f"\nFound first VS: {first_vs}")
+                    # TODO 下面这句注释理解不了
                 # I still don't really understand what the lower ids that show up sometimes are for, but there needs
                 #   to be some method of allowing them to be used in case the object we are scraping is one of the few in the scene
-                if draw_id not in relevant_id_group and (use_lower or int(draw_id)>10):
+
+                # TODO 这里为什么要判断draw_id > 10？难道永杰是35 原神是10？ 还有use_lower是什么意思
+                # TODO 要搞清楚这里具体做了什么操作
+                if draw_id not in relevant_id_group and (use_lower or draw_id_int > 10):
+
                     if texture_only_flag:
                         draw_id = "x" + draw_id
                     relevant_id_group.append(draw_id)
+
                     if os.path.splitext(filename)[1] == ".buf":
                         filename = filename.replace(".buf", ".txt")
+
                     with open(os.path.join(frame_dump_folder, filename), "r") as f:
+                        print(filename)
+                        # TODO 这里要打开ib文件读取vertex count，但是读不到，所以这里就报错了
                         vertex_count = int([x for x in f.readlines() if "vertex count:" in x][0].split(": ")[1])
 
                     ib_filename = [x for x in frame_dump_files if draw_id in x and "-ib=" in x and ".txt" in x]
+
                     if ib_filename:
                         with open(os.path.join(frame_dump_folder, ib_filename[0]), "r") as f:
                             first_index = int([x for x in f.readlines() if "first index:" in x][0].split(": ")[1])
@@ -501,8 +546,10 @@ def collect_model_data(frame_dump_folder, relevant_ids, force_ids):
                 # Same assumption needs to be changed for position too
                 position_vb_candidate = [name for name in current_id_files if
                                          "-vb0=" in name and os.path.splitext(name)[1] == ".txt"][0]
+
                 with open(os.path.join(frame_dump_folder, position_vb_candidate), "r") as f:
                     position_count = int([x for x in f.readlines() if "vertex count:" in x][0].split(": ")[1])
+
                 if position_count > position_largest_count:
                     print(f"New best position candidate: {current_id}")
                     position_largest_count = position_count
