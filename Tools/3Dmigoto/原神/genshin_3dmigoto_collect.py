@@ -51,7 +51,7 @@ def main():
         frame_dump_folder = args.framedump
     else:
         print("Looking for most recent frame dump folder")
-        frame_dump_folder = [x for x in os.listdir("../../../GameFixs/N卡/Naraka") if "FrameAnalysis" in x][-1]
+        frame_dump_folder = [x for x in os.listdir("../../../GameFixs/N卡/永劫无间") if "FrameAnalysis" in x][-1]
         print(f"Found! Folder: {frame_dump_folder}")
 
     # Was getting tired of accidentally deleting folder contents when making typos
