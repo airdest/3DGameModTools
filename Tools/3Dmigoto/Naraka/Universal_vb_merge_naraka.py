@@ -2,15 +2,20 @@ import glob
 import os
 import re
 import shutil
+import warnings
 
 # Magic Value列表
 # 崩坏3
-BH3_element_number = b"7"
-BH3_ROOT_VS = "653c63ba4a73ca8b"
+BH3_element_number = b"7"  # 崩坏三的正常element索引截至数，从0开始到7结束
+BH3_ROOT_VS = "653c63ba4a73ca8b"  # 崩坏三的根源vs的hash地址
+BH3_INPUT_VB = ""
 
-Naraka_element_number = b"13"
-Naraka_ROOT_VS = "e8425f64cfb887cd"
+Naraka_element_number = b"13"  # naraka的正常element索引截至数，从0开始到13结束
+Naraka_ROOT_VS = "e8425f64cfb887cd"  # naraka的根源vs的hash地址
+Naraka_INPUT_VB = "9f655a36"  # 你自己指定要导入到blender的ib或vb的hash地址
 
+# 全局变量列表
+Naraka_related_vb_indexlist = []  # 你指定的ib的相关衍生的ib文件的开头索引，用于确定转移文件的范围
 
 
 class VertexModel:
@@ -49,9 +54,14 @@ class VertexData:
     BLENDWEIGHTS = None
     BLENDINDICES = None
 
+class VbFileInfo:
+    vertex_model = VertexModel()
+    vertex_data = VertexData()
+    output_filename = None
 
-def get_header_infos(vb_file):
-    print("开始读取vbModel")
+def get_header_infos(vb_file_name):
+    vb_file = open(vb_file_name, 'rb')
+    # print("开始读取vbModel")
     # ★初始化信息装载
     naraka_vb_model = VertexModel()
 
@@ -156,7 +166,7 @@ def get_header_infos(vb_file):
                 # 单个处理完毕
                 elements_single_process_over = True
 
-            if element_tmp.element_number == BH3_element_number and elements_single_process_over:
+            if element_tmp.element_number == Naraka_element_number and elements_single_process_over:
                 # print("所有Element处理完毕")
                 # print(element_list)
                 naraka_vb_model.elementlist = element_list
@@ -165,14 +175,14 @@ def get_header_infos(vb_file):
                 break
     # 读取完header部分后，关闭文件
     vb_file.close()
-    print("vb文件header部分读取完成！")
-    print("----------------------------------------------------------------")
-    print(naraka_vb_model.elementlist)
+    # print("vb文件header部分读取完成！")
+    # print("----------------------------------------------------------------")
+    # print(naraka_vb_model.elementlist)
     return naraka_vb_model
 
 
 def output_model_txt(naraka_vb_model,vertex_data_list,output_filename):
-    print("开始写出文件")
+    print("开始写出文件: " + output_filename)
     # 首先解决VertexData部分缺失，但是Element部分存在，导致合成的结果无法正常导入Blender的问题。
     # 抽取第一个vertex_data，判断它哪些属性存在
     vertex_data_test = vertex_data_list[0]
@@ -286,7 +296,27 @@ def output_model_txt(naraka_vb_model,vertex_data_list,output_filename):
     output_file.close()
 
 
-def get_vertex_data_list(vb_filenames, vertex_count):
+def get_pointlist_topology():
+    """
+
+    :return:
+    """
+
+    pass
+
+
+def get_vertex_data(vb_filenames, vertex_count):
+    # warnings.warn("过时方法",DeprecationWarning)
+    """
+    这里拿到的是一个ib文件的vb文件列表，然后返回这个ib文件对应的vb0的vertex_data列表
+    但是在新版本中，我们需要先获取所有使用到pointlist技术的ib文件，然后对每个ib文件都获取vertex_data列表，并组成一个数据结构放入到pointlist技术列表中
+    然后我们遍历pointlist技术列表，用拿到的vertex_count去对比pointlist技术列表其中的vertexcount，
+    如果vertexcount值相同，就用pointlist里的值替换我们当前列表的值
+    :param vb_filenames:
+    :param vertex_count:
+    :return:
+    """
+    # TODO 这里要使用pointlist技术中的姿态
     # print("开始读取vertex data 列表")
     # print(int(str(vertex_count.decode())))  5573
 
@@ -408,7 +438,7 @@ def getVb0Bytes(bytes, vb_number):
     return str(bytes.decode()).replace(vb_number.decode(), "vb0").encode()
 
 
-def get_model_info():
+def main():
     # 设置当前目录
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
     print("当前工作目录：" + str(os.path.abspath(os.path.dirname(__file__))))
@@ -422,15 +452,19 @@ def get_model_info():
     # NOTE: Will *not* include index buffers without vertex data! (i.e. ib files without corresponding vb files)
     indices = sorted([re.findall('^\d+', x)[0] for x in glob.glob('*-vb0*txt')])
 
+
+    # TODO 创建一个用来装pointlist的vb信息的列表
+    pointlist_vb_list = []
+    triangle_vb_list = []
+
+
     for file_index in range(len(indices)):
         # 获取IB文件列表，要么没有，要么只有一个
         ib_files = glob.glob(indices[file_index] + '-ib*txt')
-        # 首先获取一个所有VB文件的列表
+        # 首先获取当前index的所有VB文件的列表
         vb_filenames = sorted(glob.glob(indices[file_index] + '-vb*txt'))
-        # ['000001-vb0=77fbb062-vs=e8425f64cfb887cd.txt',
-        # '000001-vb1=369ab42b-vs=e8425f64cfb887cd.txt',
-        # '000001-vb2=e7836825-vs=e8425f64cfb887cd.txt']
 
+        # 如果不存在ib文件，则直接跳过此索引不进行处理
         if ib_files.__len__() == 0:
             print("由于blender暂不支持无ib文件类型，所以跳过不处理")
             continue
@@ -447,52 +481,138 @@ def get_model_info():
             #         print("blender暂不支持导入pointlist文件，跳过...")
             #         continue
 
-        else:
-            # 读取当前ib文件判断topology是否为Pointlist，如果是就跳过
-            ib_filename = str(glob.glob(indices[file_index] + '-ib*txt')[0])
-            print("正在处理: " + ib_filename + "  ....")
 
-            # 如果有IB文件，就把IB(index buffer)文件复制到output目录，直接复制不修改内容
-            if os.path.exists(ib_filename):
-                # 遇到pointlist自动跳过且不复制到output目录
-                # 判断是否为topology
-                pointlist_flag = is_pointlist_file(ib_filename)
-                if pointlist_flag:
-                    print("blender暂不支持导入pointlist文件，跳过...")
-                    continue
+        ib_filename = str(glob.glob(indices[file_index] + '-ib*txt')[0])
+        print("正在处理: " + ib_filename + "  ....")
 
-                # 复制ib文件到output目录
-                shutil.copy2(ib_filename, 'output/' + ib_filename)
 
+
+        # 读取当前ib文件判断topology是否为Pointlist
 
         # 第二步：处理VB文件
         # 把这个IndexBuffer里的所有VB文件的内容融合到一个单独的VB文件中
 
-
-        # (1)读取Header部分数据
-        vb_file = open(vb_filenames[0], 'rb')
-        print(vb_file.name)
-
+        # (1)读取一个vb文件的Header部分数据,因为header部分长得都一样，所以默认用vb0来读取
         # ★初始化并读取header部分信息
-        naraka_vb_model = get_header_infos(vb_file)
+        first_vb_filename = vb_filenames[0]
+
+        vertex_model = get_header_infos(first_vb_filename)
 
         # ★设置当前所属Index
-        naraka_vb_model.file_index = file_index
+        vertex_model.file_index = file_index
 
         # ★设置最终步长
-        # 获取每个VB文件的步长(stride)
+        # 获取每个VB文件的步长(stride)，然后相加到一起得到最终步长
         strides = []
         for file_index_inner in range(len(vb_filenames)):
             with open(vb_filenames[file_index_inner], 'rb') as vb_file:
                 vb_data = vb_file.read()
             strides.append(int(vb_data[vb_data.find(b'stride:') + 8:vb_data.find(b'\x0d\x0a')]))
-        naraka_vb_model.stride = str(sum(strides)).encode()
+        vertex_model.stride = str(sum(strides)).encode()
+
 
         # ★遍历所有vb文件，读取VertexData部分数据
-        vertex_data_list = get_vertex_data_list(vb_filenames, naraka_vb_model.vertex_count)
+        vertex_data = get_vertex_data(vb_filenames, vertex_model.vertex_count)
 
-        # (3)遍历并拼接vertex_data部分,然后输出
-        output_model_txt(naraka_vb_model, vertex_data_list, 'output/' + vb_filenames[0])
+
+
+        # (2) 判断是pointlsit还是trianglist
+        # 如果有IB文件，就把IB(index buffer)文件复制到output目录，直接复制不修改内容
+        if os.path.exists(ib_filename):
+            # 遇到pointlist自动跳过且不复制到output目录
+            # 判断是否为topology
+            pointlist_flag = is_pointlist_file(ib_filename)
+            # TODO 这里注意，pointlist文件只用来获取真实的骨骼信息，而不移动到output目录
+            # 这里如果是pointlist文件，就加入专属列表，如果是tranglelist，就加入tranglist列表
+            output_filename = 'output/' + first_vb_filename
+
+            # TODO 这里是pointlist的基础上，文件名中还必须包含根源VB，可能因为正确的blendwidth 和 blendindices是包含在根源VB里的
+            # TODO 这里ib的文件名还要包含我们指定的vb，限制范围，防止出现找到多个pointlist
+            if pointlist_flag and ib_filename.__contains__(Naraka_ROOT_VS):
+                pointlist_vb = VbFileInfo()
+                pointlist_vb.vertex_model = vertex_model
+                pointlist_vb.vertex_data = vertex_data
+                pointlist_vb.output_filename = output_filename
+                pointlist_vb_list.append(pointlist_vb)
+            elif ib_filename.__contains__(Naraka_INPUT_VB):
+                trianglelist_vb = VbFileInfo()
+                trianglelist_vb.vertex_model = vertex_model
+                trianglelist_vb.vertex_data = vertex_data
+                trianglelist_vb.output_filename = output_filename
+                triangle_vb_list.append(trianglelist_vb)
+                # 复制ib文件到output目录
+                shutil.copy2(ib_filename, 'output/' + ib_filename)
+
+
+
+
+    # TODO 实际上，在拼接之前，就应该能从vertex_data_list中找出pointlist类型的
+    # 修正trianglelist中的骨骼和blend信息
+    rectified_triangle_list = []
+    for triangle_vb in triangle_vb_list:
+        triangle_vertex_model =  triangle_vb.vertex_model
+        vertex_count = triangle_vertex_model.vertex_count
+
+        right_pointlist_vb = None
+        count = 0
+        for pointlist_vb in pointlist_vb_list:
+            if vertex_count == pointlist_vb.vertex_model.vertex_count:
+                right_pointlist_vb = pointlist_vb
+                count = count + 1
+
+        if right_pointlist_vb is None:
+            print("未找到对应的pointlist")
+            print("vertexcount"+str(vertex_count))
+        elif count == 1:
+            print("找到了对应的pointlist，进行替换")
+            # TODO 这里目前还不确定是全部替换比较好，还是只替换部分比较好,先运行试试，有可能存在element数量不一致情况
+            triangle_vb.vertex_data = right_pointlist_vb.vertex_data
+            # TODO 这里的步长也要替换成pointlist的步长才对
+            triangle_vb.vertex_model.stride = right_pointlist_vb.vertex_model.stride
+            print(right_pointlist_vb.output_filename)
+        else:
+            # 这里触发找到了多个对应pointlist的原因是trianglelist那里我们没有对输入的vb做限制
+            print("找到了多个对应的pointlist？？？")
+            exit(1)
+        # 加入到修正后的列表中
+        rectified_triangle_list.append(triangle_vb)
+
+    # ★这里需要注意，因为永劫无间格式很完整不需要修复，所以这里注释掉不用了
+    # 遍历修正后的列表，修复vertex_data中含有blendindices，但是语义部分没有，而导致最后导入的数据可能有问题的情况
+    # new_rectified_triangle_list = []
+    # for rectified_vb in rectified_triangle_list:
+    #     element_list = rectified_vb.vertex_model.elementlist
+    #     if len(element_list) == 8:
+    #         # 如果长度为8，说明只有8个元素，缺少了blend indices元素，同时也要判断vertex_data里是否有blendindices元素
+    #         if rectified_vb.vertex_data[0].BLENDINDICES is not None:
+    #             print("------------------------------------------")
+    #             print("找到了需要补齐的元素")
+    #
+    #             # 补齐element列表
+    #             element = Element()
+    #             # 这里的number为8是因为BH3是从0开始到7，我们在最后追加所以7+1=8
+    #             element.element_number = b"8"
+    #             element.semantic_name = b"BLENDINDICES"
+    #             element.semantic_index = b"0"
+    #             element.format = b"R32G32B32A32_UINT"
+    #             element.input_slot = b"0"
+    #             element.aligned_byte_offset = b'16'
+    #             element.input_slot_class = b"per-vertex"
+    #             element.instance_data_step_rate = b"0"
+    #             rectified_vb.vertex_model.elementlist.append(element)
+    #
+    #     new_rectified_triangle_list.append(rectified_vb)
+
+    # (3)遍历修正后的列表并拼接vertex_data部分,然后输出
+    for rectfied_vb in rectified_triangle_list:
+        # 将这些vb文件的开头索引加入到列表，方便后续移动dds文件和vs-cb文件
+        outputindex = str(rectfied_vb.output_filename)
+        outputindex = outputindex[outputindex.find("/000")+ 1:outputindex.find("/000") + 7]
+        print(outputindex)
+
+        Naraka_related_vb_indexlist.append(outputindex)
+        # 输出到文件
+        output_model_txt(rectfied_vb.vertex_model, rectfied_vb.vertex_data, rectfied_vb.output_filename)
 
 
 def move_dds_file():
@@ -510,27 +630,42 @@ def move_dds_file():
     filenames = glob.glob('*.dds')
     for filename in filenames:
         if os.path.exists(filename):
-            print("正在处理： " + filename + " ....")
-            shutil.copy2(filename, 'output/' + filename)
+            for index in Naraka_related_vb_indexlist:
+                if filename.__contains__(index):
+                    print("正在处理： " + filename + " ....")
+                    shutil.copy2(filename, 'output/' + filename)
 
 
-def move_vs_cb_file():
+def move_cb_file():
     # 设置当前目录
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
     print("----------------------------------------------------------------")
-    print("开始移动vs-cb2骨骼txt文件")
+    print("开始移动vs-cb骨骼txt文件")
 
     # 创建output目录，用于存放输出后的脚本
     if not os.path.exists('output'):
         os.mkdir('output')
 
-    # 移动vs-cb2骨骼文件
+    # 移动vs-cb骨骼文件
     filenames = glob.glob('*vs-cb*')
     for filename in filenames:
         if os.path.exists(filename):
-            print("正在处理： " + filename + " ....")
-            shutil.copy2(filename, 'output/' + filename)
-    pass
+            # TODO 必须包含指定vb的索引才能移动，不然不移动过去
+            for index in Naraka_related_vb_indexlist:
+                if filename.__contains__(index):
+                    print("正在移动： " + filename + " ....")
+                    shutil.copy2(filename, 'output/' + filename)
+
+    # 移动ps-cb骨骼文件
+    filenames = glob.glob('*ps-cb*')
+    for filename in filenames:
+        if os.path.exists(filename):
+            # TODO 必须包含指定vb的索引才能移动，不然不移动过去
+            for index in Naraka_related_vb_indexlist:
+                if filename.__contains__(index):
+                    print("正在移动： " + filename + " ....")
+                    shutil.copy2(filename, 'output/' + filename)
+
 
 def move_buf_file():
     # 设置当前目录
@@ -576,9 +711,10 @@ def is_pointlist_file(filename):
 
 
 if __name__ == "__main__":
-    get_model_info()
+    Naraka_INPUT_VB = "9f655a36"
+    main()
     move_dds_file()
-    move_vs_cb_file()
+    move_cb_file()
 
     # 默认不移动buf文件，因为对不上
     # move_buf_file()

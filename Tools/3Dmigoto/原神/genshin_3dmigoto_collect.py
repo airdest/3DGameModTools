@@ -391,6 +391,7 @@ def collect_relevant_ids(frame_dump_folder, draw_vb_hashes, use_lower=False):
 # Collects model data (ib, color, texcoord(s), textures)
 # Positional data comes from the pointlists, but can force it to be collected from these buffers by using the flag
 def collect_model_data(frame_dump_folder, relevant_ids, force_ids):
+    # TODO
     model_data = []
     position_vbs = []
     texcoord_vbs = []
