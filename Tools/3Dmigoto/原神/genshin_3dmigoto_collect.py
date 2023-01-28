@@ -612,7 +612,7 @@ def construct_combined_buffer(buffer_data, element_format):
     vb_merged += f"stride: {stride}\n"
     vb_merged += f"first vertex: 0\nvertex count: {len(buffer_data)}\ntopology: trianglelist\n"
 
-    # 拼接语义部分
+    # 拼接语义部分 TODO 这里的byte_offset加上了当前的bytewidth？这会不会是导致无法正常导入的原因？
     element_offset = 0
     byte_offset = 0
     for element in element_format:

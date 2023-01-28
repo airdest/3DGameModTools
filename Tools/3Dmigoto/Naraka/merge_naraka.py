@@ -2,64 +2,47 @@ import glob
 import os
 import re
 import shutil
-import warnings
+from VertexStructure import *
 
-# Magic Value列表
-# 崩坏3
-BH3_element_number = b"7"  # 崩坏三的正常element索引截至数，从0开始到7结束
-BH3_ROOT_VS = "653c63ba4a73ca8b"  # 崩坏三的根源vs的hash地址
-BH3_INPUT_VB = ""
+"""
+This merge script is designed for NarakaBladepoint.
 
-Naraka_element_number = b"13"  # naraka的正常element索引截至数，从0开始到13结束
-Naraka_ROOT_VS = "e8425f64cfb887cd"  # naraka的根源vs的hash地址
-Naraka_INPUT_VB = "9f655a36"  # 你自己指定要导入到blender的ib或vb的hash地址
+For easier to read and understand, I have add a lot of comments in this script,
+but it's still very hard to understand if you are first time to this kind of vertex merge script.
 
-# 全局变量列表
-Naraka_related_vb_indexlist = []  # 你指定的ib的相关衍生的ib文件的开头索引，用于确定转移文件的范围
+So before you want to figure out how this script is work, you need a lot of basic knowledge,
+which can be found at BasicTutorial folder,especially for Element class, VertexData class and VertexModel class,
+if you don't know the basic concept behind it, you almost impossible to understand this script.
 
+Author: airde
+Date: 1/28/2023
+"""
 
-class VertexModel:
-    file_index = None
-    stride = None
-    first_vertex = None
-    vertex_count = None
-    topology = None
-    elementlist = None
+# Magic Values, for easily read and understand.
+# BH3
+BH3_ELEMENT_NUMBER = b"7"  # from 0 to 7.
+BH3_ROOT_VS = "653c63ba4a73ca8b"  # BH3's root hash.
+BH3_INPUT_VB = ""  # the ib or vb hash you want to merge.
 
-
-class Element:
-    element_number = None
-    semantic_name = None
-    semantic_index = None
-    format = None
-    input_slot = None
-    aligned_byte_offset = None
-    input_slot_class = None
-    instance_data_step_rate = None
+# NarakaBladepoint
+NARAKA_ELEMENT_NUMBER = b"13"  # from 0 to 13.
+Naraka_ROOT_VS = "e8425f64cfb887cd"  # NarakaBladepoint's root hash.
+Naraka_INPUT_VB = "9f655a36"  # the ib or vb hash you want to merge.
 
 
-class VertexData:
-    POSITION = None
-    NORMAL = None
-    TANGENT = None
-    COLOR = None
-    TEXCOORD = None
-    TEXCOORD1 = None
-    TEXCOORD2 = None
-    TEXCOORD3 = None
-    TEXCOORD4 = None
-    TEXCOORD5 = None
-    TEXCOORD6 = None
-    TEXCOORD7 = None
-    BLENDWEIGHTS = None
-    BLENDINDICES = None
+# global variables
+Naraka_related_vb_indexlist = []
+# The related file number indices from your input vb or ib hash.
+# looks like:000001,000002,000003, use this to confirm which file should be moved to output folder.
 
-class VbFileInfo:
-    vertex_model = VertexModel()
-    vertex_data = VertexData()
-    output_filename = None
+
+
 
 def get_header_infos(vb_file_name):
+    """
+    :param vb_file_name: the filename you want to extract header info.
+    :return: return a VertexModel which has the vb file header info.
+    """
     vb_file = open(vb_file_name, 'rb')
     # print("开始读取vbModel")
     # ★初始化信息装载
@@ -84,9 +67,9 @@ def get_header_infos(vb_file_name):
         # 处理header
         if not header_process_over:
             # stride只打印出来看看，因为之前已经设置过了
-            if line.startswith(b"stride: "):
-                stride = line[line.find(b"stride: ") + b"stride: ".__len__():line.find(b"\r\n")]
-                # print("stride: " + str(stride))
+            # if line.startswith(b"stride: "):
+            #     stride = line[line.find(b"stride: ") + b"stride: ".__len__():line.find(b"\r\n")]
+            #     # print("stride: " + str(stride))
 
             # 设置first_vertex,因为所有文件的first_vertex都是相同的，都是0，所以这里会取最后一次的first_vertex
             if line.startswith(b"first vertex: "):
@@ -166,143 +149,94 @@ def get_header_infos(vb_file_name):
                 # 单个处理完毕
                 elements_single_process_over = True
 
-            if element_tmp.element_number == Naraka_element_number and elements_single_process_over:
+            if element_tmp.element_number == NARAKA_ELEMENT_NUMBER and elements_single_process_over:
                 # print("所有Element处理完毕")
                 # print(element_list)
                 naraka_vb_model.elementlist = element_list
                 # print("----------------------------------------------------------------")
                 elements_all_process_over = True
                 break
+
     # 读取完header部分后，关闭文件
     vb_file.close()
     # print("vb文件header部分读取完成！")
     # print("----------------------------------------------------------------")
     # print(naraka_vb_model.elementlist)
+    # TODO 返回前设置正确的AlignedByteOffset
+    # TODO 设置正确的AlignedByteOffset后，把它们的bytewidth相加得到最终的stride从
+
+    # 设置正确的bytewidth和AlignedByteOffset,这里注意数字是手动计算出来的
+    rectified_element_list = []
+    for element in naraka_vb_model.elementlist:
+        if element.semantic_name == b"POSITION":
+            element.byte_width = 12
+            element.aligned_byte_offset = get_offset_by_name(b"POSITION")
+        if element.semantic_name == b"NORMAL":
+            element.byte_width = 12
+            element.aligned_byte_offset = get_offset_by_name(b"NORMAL")
+        if element.semantic_name == b"TANGENT":
+            element.byte_width = 16
+            element.aligned_byte_offset = get_offset_by_name(b"TANGENT")
+        if element.semantic_name == b"COLOR":
+            element.byte_width = 16
+            element.aligned_byte_offset = get_offset_by_name(b"COLOR")
+        if element.semantic_name == b"TEXCOORD":
+            element.byte_width = 16
+            element.aligned_byte_offset = get_offset_by_name(b"TEXCOORD",element.semantic_index)
+        if element.semantic_name == b"BLENDWEIGHTS":
+            element.byte_width = 16
+            element.aligned_byte_offset = get_offset_by_name(b"BLENDWEIGHTS")
+        if element.semantic_name == b"BLENDINDICES":
+            element.byte_width = 16
+            element.aligned_byte_offset = get_offset_by_name(b"BLENDINDICES")
+        rectified_element_list.append(element)
+
+    naraka_vb_model.elementlist = rectified_element_list
+    # 设置最终正确的步长
+    naraka_vb_model.stride = b"208"
     return naraka_vb_model
 
 
-def output_model_txt(naraka_vb_model,vertex_data_list,output_filename):
-    print("开始写出文件: " + output_filename)
-    # 首先解决VertexData部分缺失，但是Element部分存在，导致合成的结果无法正常导入Blender的问题。
-    # 抽取第一个vertex_data，判断它哪些属性存在
-    vertex_data_test = vertex_data_list[0]
-    element_has_list = []
-    # 默认都没有，检测到一个算一个
-
-    if vertex_data_test.POSITION is not None:
-        element_has_list.append(b"POSITION")
-    if vertex_data_test.NORMAL is not None:
-        element_has_list.append(b"NORMAL")
-    if vertex_data_test.TANGENT is not None:
-        element_has_list.append(b"TANGENT")
-    if vertex_data_test.COLOR is not None:
-        element_has_list.append(b"COLOR")
-
-    if vertex_data_test.TEXCOORD is not None:
-        element_has_list.append(b"TEXCOORD")
-    if vertex_data_test.TEXCOORD1 is not None:
-        element_has_list.append(b"TEXCOORD1")
-    if vertex_data_test.TEXCOORD2 is not None:
-        element_has_list.append(b"TEXCOORD2")
-    if vertex_data_test.TEXCOORD3 is not None:
-        element_has_list.append(b"TEXCOORD3")
-    if vertex_data_test.TEXCOORD4 is not None:
-        element_has_list.append(b"TEXCOORD4")
-    if vertex_data_test.TEXCOORD5 is not None:
-        element_has_list.append(b"TEXCOORD5")
-    if vertex_data_test.TEXCOORD6 is not None:
-        element_has_list.append(b"TEXCOORD6")
-    if vertex_data_test.TEXCOORD7 is not None:
-        element_has_list.append(b"TEXCOORD7")
-
-
-    if vertex_data_test.BLENDWEIGHTS is not None:
-        element_has_list.append(b"BLENDWEIGHTS")
-    if vertex_data_test.BLENDINDICES is not None:
-        element_has_list.append(b"BLENDINDICES")
-
-    # 输出到最终文件
-    output_file = open(output_filename, "wb+")
-
-    # (1) 首先输出header
-    output_file.write(b"stride: " + naraka_vb_model.stride + b"\r\n")
-    output_file.write(b"first vertex: " + naraka_vb_model.first_vertex + b"\r\n")
-    output_file.write(b"vertex count: " + naraka_vb_model.vertex_count + b"\r\n")
-    output_file.write(b"topology: " + naraka_vb_model.topology + b"\r\n")
-
-    # (2) 遍历Elementlist,根据是否存在element来写入对应内容
-    element_list = naraka_vb_model.elementlist
-    for element in element_list:
-        element_name = element.semantic_name
-        semantic_index = element.semantic_index
-        if element_name == b"TEXCOORD":
-            if semantic_index != b'0':
-                element_name = element_name + semantic_index
-
-        if element_has_list.__contains__(element_name):
-            # print("检测到："+str(element_name))
-            # 输出对应的Element
-            output_file.write(b"element[" + element.element_number + b"]:" + b"\r\n")
-            output_file.write(b"  SemanticName: " + element.semantic_name + b"\r\n")
-            output_file.write(b"  SemanticIndex: " + element.semantic_index + b"\r\n")
-            output_file.write(b"  Format: " + element.format + b"\r\n")
-            output_file.write(b"  InputSlot: " + element.input_slot + b"\r\n")
-            output_file.write(b"  AlignedByteOffset: " + element.aligned_byte_offset + b"\r\n")
-            output_file.write(b"  InputSlotClass: " + element.input_slot_class + b"\r\n")
-            output_file.write(b"  InstanceDataStepRate: " + element.instance_data_step_rate + b"\r\n")
-    # (3) 拼接写入Vertex-data部分
-    output_file.write(b"\r\n")
-    output_file.write(b"vertex-data:\r\n")
-    output_file.write(b"\r\n")
-
-    # 遍历vertex_data_list
-    # print(len(vertex_data_list))
-    for index in range(len(vertex_data_list)):
-        vertex_data = vertex_data_list[index]
-        # print(index)
-        if vertex_data.POSITION is not None:
-            output_file.write(vertex_data.POSITION)
-        if vertex_data.NORMAL is not None:
-            output_file.write(vertex_data.NORMAL)
-        if vertex_data.TANGENT is not None:
-            output_file.write(vertex_data.TANGENT)
-        if vertex_data.COLOR is not None:
-            output_file.write(vertex_data.COLOR)
-        if vertex_data.TEXCOORD is not None:
-            output_file.write(vertex_data.TEXCOORD)
-        if vertex_data.TEXCOORD1 is not None:
-            output_file.write(vertex_data.TEXCOORD1)
-        if vertex_data.TEXCOORD2 is not None:
-            output_file.write(vertex_data.TEXCOORD2)
-        if vertex_data.TEXCOORD3 is not None:
-            output_file.write(vertex_data.TEXCOORD3)
-        if vertex_data.TEXCOORD4 is not None:
-            output_file.write(vertex_data.TEXCOORD4)
-        if vertex_data.TEXCOORD5 is not None:
-            output_file.write(vertex_data.TEXCOORD5)
-        if vertex_data.TEXCOORD6 is not None:
-            output_file.write(vertex_data.TEXCOORD6)
-        if vertex_data.TEXCOORD7 is not None:
-            output_file.write(vertex_data.TEXCOORD7)
-        if vertex_data.BLENDWEIGHTS is not None:
-            output_file.write(vertex_data.BLENDWEIGHTS)
-        if vertex_data.BLENDINDICES is not None:
-            output_file.write(vertex_data.BLENDINDICES)
-
-        # 如果是最后一行，就不追加换行符
-        if index != len(vertex_data_list) - 1:
-            output_file.write(b"\r\n")
-
-    output_file.close()
-
-
-def get_pointlist_topology():
+def get_offset_by_name(element_name, semantic_index = b"0"):
     """
-
+    get aligned byte offset by name
+    :param element_name:
     :return:
     """
+    aligned_byte_offset = b"0"
 
-    pass
+    if element_name == b"POSITION":
+        aligned_byte_offset = b"0"
+
+    if element_name == b"NORMAL":
+        aligned_byte_offset = b"12"
+
+    if element_name == b"TANGENT":
+        aligned_byte_offset = b"24"
+
+    if element_name == b"COLOR":
+        aligned_byte_offset = b"40"
+
+    if element_name.startswith(b"TEXCOORD") and element_name.__len__() > 8:
+        name = element_name.decode()
+        tex_num = int(name[name.find("TEXCOORD")+8:name.find("TEXCOORD")+9])
+        aligned_byte_offset = str(64 + ((tex_num - 1) * 16)).encode()
+
+    if element_name.endswith(b"TEXCOORD"):
+        tex_num = int(semantic_index.decode())
+        if tex_num == 0:
+            aligned_byte_offset = b"56"
+        else:
+            aligned_byte_offset = str(64 + ((tex_num - 1) * 16)).encode()
+
+
+    if element_name == b"BLENDWEIGHTS":
+        aligned_byte_offset = str(64 + (16 * 7)).encode()
+
+    if element_name == b"BLENDINDICES":
+        aligned_byte_offset = str(64 + (16 * 8)).encode()
+
+    return aligned_byte_offset
 
 
 def get_vertex_data(vb_filenames, vertex_count):
@@ -438,6 +372,124 @@ def getVb0Bytes(bytes, vb_number):
     return str(bytes.decode()).replace(vb_number.decode(), "vb0").encode()
 
 
+def output_model_txt(naraka_vb_model, vertex_data_list, output_filename):
+    print("开始写出文件: " + output_filename)
+    # 首先解决VertexData部分缺失，但是Element部分存在，导致合成的结果无法正常导入Blender的问题。
+    # 抽取第一个vertex_data，判断它哪些属性存在
+    vertex_data_test = vertex_data_list[0]
+    element_has_list = []
+    # 默认都没有，检测到一个算一个
+
+    if vertex_data_test.POSITION is not None:
+        element_has_list.append(b"POSITION")
+    if vertex_data_test.NORMAL is not None:
+        element_has_list.append(b"NORMAL")
+    if vertex_data_test.TANGENT is not None:
+        element_has_list.append(b"TANGENT")
+    if vertex_data_test.COLOR is not None:
+        element_has_list.append(b"COLOR")
+
+    if vertex_data_test.TEXCOORD is not None:
+        element_has_list.append(b"TEXCOORD")
+    if vertex_data_test.TEXCOORD1 is not None:
+        element_has_list.append(b"TEXCOORD1")
+
+    if vertex_data_test.TEXCOORD2 is not None:
+        element_has_list.append(b"TEXCOORD2")
+    if vertex_data_test.TEXCOORD3 is not None:
+        element_has_list.append(b"TEXCOORD3")
+    if vertex_data_test.TEXCOORD4 is not None:
+        element_has_list.append(b"TEXCOORD4")
+    if vertex_data_test.TEXCOORD5 is not None:
+        element_has_list.append(b"TEXCOORD5")
+    if vertex_data_test.TEXCOORD6 is not None:
+        element_has_list.append(b"TEXCOORD6")
+    if vertex_data_test.TEXCOORD7 is not None:
+        element_has_list.append(b"TEXCOORD7")
+
+
+    if vertex_data_test.BLENDWEIGHTS is not None:
+        element_has_list.append(b"BLENDWEIGHTS")
+    if vertex_data_test.BLENDINDICES is not None:
+        element_has_list.append(b"BLENDINDICES")
+
+    # 输出到最终文件
+    output_file = open(output_filename, "wb+")
+
+    # (1) 首先输出header
+    output_file.write(b"stride: " + naraka_vb_model.stride + b"\r\n")
+    output_file.write(b"first vertex: " + naraka_vb_model.first_vertex + b"\r\n")
+    output_file.write(b"vertex count: " + naraka_vb_model.vertex_count + b"\r\n")
+    output_file.write(b"topology: " + naraka_vb_model.topology + b"\r\n")
+
+    # (2) 遍历Elementlist,根据是否存在element来写入对应内容
+    element_list = naraka_vb_model.elementlist
+    for element in element_list:
+        element_name = element.semantic_name
+        semantic_index = element.semantic_index
+        if element_name == b"TEXCOORD":
+            if semantic_index != b'0':
+                element_name = element_name + semantic_index
+
+        if element_has_list.__contains__(element_name):
+            # print("检测到："+str(element_name))
+            # 输出对应的Element
+            output_file.write(b"element[" + element.element_number + b"]:" + b"\r\n")
+            output_file.write(b"  SemanticName: " + element.semantic_name + b"\r\n")
+            output_file.write(b"  SemanticIndex: " + element.semantic_index + b"\r\n")
+            output_file.write(b"  Format: " + element.format + b"\r\n")
+            output_file.write(b"  InputSlot: " + element.input_slot + b"\r\n")
+            output_file.write(b"  AlignedByteOffset: " + element.aligned_byte_offset + b"\r\n")
+            output_file.write(b"  InputSlotClass: " + element.input_slot_class + b"\r\n")
+            output_file.write(b"  InstanceDataStepRate: " + element.instance_data_step_rate + b"\r\n")
+    # (3) 拼接写入Vertex-data部分
+    output_file.write(b"\r\n")
+    output_file.write(b"vertex-data:\r\n")
+    output_file.write(b"\r\n")
+
+    # TODO 写出之前要替换掉正确的byteoffset
+
+    # 遍历vertex_data_list
+    # print(len(vertex_data_list))
+    for index in range(len(vertex_data_list)):
+        vertex_data = vertex_data_list[index]
+        # print(index)
+        if vertex_data.POSITION is not None:
+            output_file.write(vertex_data.POSITION)
+        if vertex_data.NORMAL is not None:
+            output_file.write(vertex_data.NORMAL)
+        if vertex_data.TANGENT is not None:
+            output_file.write(vertex_data.TANGENT)
+        if vertex_data.COLOR is not None:
+            output_file.write(vertex_data.COLOR)
+        if vertex_data.TEXCOORD is not None:
+            output_file.write(vertex_data.TEXCOORD)
+        if vertex_data.TEXCOORD1 is not None:
+            output_file.write(vertex_data.TEXCOORD1)
+        if vertex_data.TEXCOORD2 is not None:
+            output_file.write(vertex_data.TEXCOORD2)
+        if vertex_data.TEXCOORD3 is not None:
+            output_file.write(vertex_data.TEXCOORD3)
+        if vertex_data.TEXCOORD4 is not None:
+            output_file.write(vertex_data.TEXCOORD4)
+        if vertex_data.TEXCOORD5 is not None:
+            output_file.write(vertex_data.TEXCOORD5)
+        if vertex_data.TEXCOORD6 is not None:
+            output_file.write(vertex_data.TEXCOORD6)
+        if vertex_data.TEXCOORD7 is not None:
+            output_file.write(vertex_data.TEXCOORD7)
+        if vertex_data.BLENDWEIGHTS is not None:
+            output_file.write(vertex_data.BLENDWEIGHTS)
+        if vertex_data.BLENDINDICES is not None:
+            output_file.write(vertex_data.BLENDINDICES)
+
+        # 如果是最后一行，就不追加换行符
+        if index != len(vertex_data_list) - 1:
+            output_file.write(b"\r\n")
+
+    output_file.close()
+
+
 def main():
     # 设置当前目录
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
@@ -501,19 +553,8 @@ def main():
         # ★设置当前所属Index
         vertex_model.file_index = file_index
 
-        # ★设置最终步长
-        # 获取每个VB文件的步长(stride)，然后相加到一起得到最终步长
-        strides = []
-        for file_index_inner in range(len(vb_filenames)):
-            with open(vb_filenames[file_index_inner], 'rb') as vb_file:
-                vb_data = vb_file.read()
-            strides.append(int(vb_data[vb_data.find(b'stride:') + 8:vb_data.find(b'\x0d\x0a')]))
-        vertex_model.stride = str(sum(strides)).encode()
-
-
         # ★遍历所有vb文件，读取VertexData部分数据
         vertex_data = get_vertex_data(vb_filenames, vertex_model.vertex_count)
-
 
 
         # (2) 判断是pointlsit还是trianglist
@@ -603,6 +644,37 @@ def main():
     #
     #     new_rectified_triangle_list.append(rectified_vb)
 
+    # 1.除了TEXCOORD1外，其它冗余的TEXCOORD都是需要保留的
+    # TODO 2.AlignedByteOffset要重新赋值
+    # TODO 3.vertex_data部分的索引+xxx要重新赋予正确的值
+    # TODO 为什么不在读取的时候替换而是写出的时候替换？都是一样的，最终写出的时候替换才是最终结果
+    newlist = []
+    for rectfied_vb in rectified_triangle_list:
+        new_vertex_data_list = []
+        vertex_data_list = rectfied_vb.vertex_data
+        for vertex_data in vertex_data_list:
+            vertex_data.POSITION = get_rectified_vertex(vertex_data.POSITION)
+            print(vertex_data.POSITION)
+            print(get_rectified_vertex(vertex_data.POSITION))
+            vertex_data.NORMAL = get_rectified_vertex(vertex_data.NORMAL)
+            vertex_data.TANGENT = get_rectified_vertex(vertex_data.TANGENT)
+            vertex_data.COLOR = get_rectified_vertex(vertex_data.COLOR)
+            vertex_data.TEXCOORD = get_rectified_vertex(vertex_data.TEXCOORD)
+            vertex_data.TEXCOORD1 = get_rectified_vertex(vertex_data.TEXCOORD1)
+            vertex_data.TEXCOORD2 = get_rectified_vertex(vertex_data.TEXCOORD2)
+            vertex_data.TEXCOORD3 = get_rectified_vertex(vertex_data.TEXCOORD3)
+            vertex_data.TEXCOORD4 = get_rectified_vertex(vertex_data.TEXCOORD4)
+            vertex_data.TEXCOORD5 = get_rectified_vertex(vertex_data.TEXCOORD5)
+            vertex_data.TEXCOORD6 = get_rectified_vertex(vertex_data.TEXCOORD6)
+            vertex_data.TEXCOORD7 = get_rectified_vertex(vertex_data.TEXCOORD7)
+            vertex_data.BLENDWEIGHTS = get_rectified_vertex(vertex_data.BLENDWEIGHTS)
+            vertex_data.BLENDINDICES = get_rectified_vertex(vertex_data.BLENDINDICES)
+            new_vertex_data_list.append(vertex_data)
+
+        rectfied_vb.vertex_data = new_vertex_data_list
+        newlist.append(rectfied_vb)
+    rectified_triangle_list = newlist
+
     # (3)遍历修正后的列表并拼接vertex_data部分,然后输出
     for rectfied_vb in rectified_triangle_list:
         # 将这些vb文件的开头索引加入到列表，方便后续移动dds文件和vs-cb文件
@@ -613,6 +685,18 @@ def main():
         Naraka_related_vb_indexlist.append(outputindex)
         # 输出到文件
         output_model_txt(rectfied_vb.vertex_model, rectfied_vb.vertex_data, rectfied_vb.output_filename)
+
+
+def get_rectified_vertex(vertex):
+    vertex_decode = vertex.decode()
+    original_index = vertex_decode[vertex_decode.find("]+"):vertex_decode.find("]+") + 2 + 3]
+    original_name = vertex_decode[vertex_decode.find("]+")+6: vertex_decode.find(": ")]
+    new_index = get_offset_by_name(original_name.encode()).decode()
+    new_index = "]+" + new_index.zfill(3)
+    vertex_decode = vertex_decode.replace(original_index,new_index)
+    rectified_vertexstr = vertex_decode.encode()
+    return rectified_vertexstr
+
 
 
 def move_dds_file():
@@ -711,7 +795,11 @@ def is_pointlist_file(filename):
 
 
 if __name__ == "__main__":
-    Naraka_INPUT_VB = "9f655a36"
+    # 殷紫萍衣服
+    # Naraka_INPUT_VB = "9f655a36"
+    # 殷紫萍身体
+    Naraka_INPUT_VB = "76c673f1"
+
     main()
     move_dds_file()
     move_cb_file()
