@@ -1,21 +1,9 @@
 import glob
 import os
-import re
 import shutil
-from VertexStructure import *
+from DataStructure import *
 
 
-# Magic Values, for easily read and understand.
-# NarakaBladepoint
-NARAKA_ELEMENT_NUMBER = b"13"  # from 0 to 13.
-NARAKA_ROOT_VS = "e8425f64cfb887cd"  # NarakaBladepoint's root hash.
-NARAKA_INPUT_VB = "9f655a36"  # the ib or vb hash you want to merge.
-
-
-# global variables
-Naraka_related_vb_indexlist = []
-# The related file number indices from your input vb or ib hash.
-# looks like:000001,000002,000003, use this to confirm which file should be moved to output folder.
 
 
 
@@ -28,7 +16,7 @@ def get_header_infos(vb_file_name):
     vb_file = open(vb_file_name, 'rb')
     # print("开始读取vbModel")
     # ★初始化信息装载
-    naraka_vb_model = VertexModel()
+    naraka_vb_model = VbFile()
 
     # 用于控制标题部分读取
     header_process_over = False
@@ -126,7 +114,7 @@ def get_header_infos(vb_file_name):
                 # 单个处理完毕
                 elements_single_process_over = True
 
-            if element_tmp.element_number == NARAKA_ELEMENT_NUMBER and elements_single_process_over:
+            if element_tmp.element_number == GLOBAL_ELEMENT_NUMBER and elements_single_process_over:
                 # print("所有Element处理完毕")
                 # print(element_list)
                 naraka_vb_model.elementlist = element_list
@@ -295,12 +283,7 @@ def get_vertex_data(vb_filenames, vertex_count):
 
 
 def getVb0Bytes(bytes, vb_number):
-    """
-    将输出结果中的vbn全部换为vb0
-    :param bytes:
-    :param vb_number:
-    :return:
-    """
+
     return str(bytes.decode()).replace(vb_number.decode(), "vb0").encode()
 
 
@@ -421,36 +404,6 @@ def output_model_txt(naraka_vb_model, vertex_data_list, output_filename):
             output_file.write(b"\r\n")
 
     output_file.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-def move_buf_file():
-    # 设置当前目录
-    os.chdir(os.path.abspath(os.path.dirname(__file__)))
-    print("----------------------------------------------------------------")
-    print("开始移动.buf文件")
-
-    # 创建output目录，用于存放输出后的脚本
-    if not os.path.exists('output'):
-        os.mkdir('output')
-
-    # 移动vs-cb2骨骼文件
-    filenames = glob.glob('*.buf')
-    for filename in filenames:
-        if os.path.exists(filename):
-            print("正在处理： " + filename + " ....")
-            shutil.copy2(filename, 'output/' + filename)
-    pass
 
 
 def is_pointlist_file(filename):

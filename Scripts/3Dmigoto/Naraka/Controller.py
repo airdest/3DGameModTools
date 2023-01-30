@@ -1,37 +1,15 @@
 from Methods import *
 
-
-# Offsets calculated
-OFFSET_POSITION = None
-OFFSET_NORMAL = None
-OFFSET_TANGENT = None
-OFFSET_COLOR = None
-OFFSET_TEXCOORD = None
-OFFSET_TEXCOORD1 = None
-OFFSET_TEXCOORD2 = None
-OFFSET_TEXCOORD3 = None
-OFFSET_TEXCOORD4 = None
-OFFSET_TEXCOORD5 = None
-OFFSET_TEXCOORD6 = None
-OFFSET_TEXCOORD7 = None
-
-OFFSET_BLENDWEIGHTS = None
-OFFSET_BLENDINDICES = None
-
-# 便于设置工作目录
-work_dir = "C:/Users/Administrator/Desktop/FrameAnalysis-2023-01-29-130542/"
-
-def move_dds_file():
+def move_related_files():
     # 设置当前目录
     os.chdir(work_dir)
-
-    print("----------------------------------------------------------------")
-    print("开始移动.dds贴图文件")
 
     # 创建output目录，用于存放输出后的脚本
     if not os.path.exists('output'):
         os.mkdir('output')
 
+    print("----------------------------------------------------------------")
+    print("开始移动.dds贴图文件")
     # 移动dds贴图文件
     filenames = glob.glob('*.dds')
     for filename in filenames:
@@ -41,36 +19,30 @@ def move_dds_file():
                     print("正在处理： " + filename + " ....")
                     shutil.copy2(filename, 'output/' + filename)
 
-
-def move_cb_file():
-    # 设置当前目录
-    os.chdir(work_dir)
     print("----------------------------------------------------------------")
     print("开始移动vs-cb骨骼txt文件")
-
-    # 创建output目录，用于存放输出后的脚本
-    if not os.path.exists('output'):
-        os.mkdir('output')
-
     # 移动vs-cb骨骼文件
     filenames = glob.glob('*vs-cb*')
     for filename in filenames:
         if os.path.exists(filename):
-            # TODO 必须包含指定vb的索引才能移动，不然不移动过去
+            # 必须包含指定vb的索引才能移动
             for index in Naraka_related_vb_indexlist:
                 if filename.__contains__(index):
                     print("正在移动： " + filename + " ....")
                     shutil.copy2(filename, 'output/' + filename)
 
+    print("----------------------------------------------------------------")
+    print("开始移动ps-cb骨骼txt文件")
     # 移动ps-cb骨骼文件
     filenames = glob.glob('*ps-cb*')
     for filename in filenames:
         if os.path.exists(filename):
-            # TODO 必须包含指定vb的索引才能移动，不然不移动过去
+            # 必须包含指定vb的索引才能移动
             for index in Naraka_related_vb_indexlist:
                 if filename.__contains__(index):
                     print("正在移动： " + filename + " ....")
                     shutil.copy2(filename, 'output/' + filename)
+
 
 def get_format_by_name(element_name, semantic_index):
     # TODO 这里的format都是照着原神导出的文件抄过来的，但是根本不明白含义，需要搞懂
@@ -101,6 +73,7 @@ def get_format_by_name(element_name, semantic_index):
         format = b"R32G32B32A32_SINT"
 
     return format
+
 
 def get_offset_by_name(element_name):
     aligned_byte_offset = None
@@ -142,6 +115,7 @@ def get_offset_by_name(element_name):
         aligned_byte_offset = OFFSET_BLENDINDICES
 
     return aligned_byte_offset
+
 
 def set_offset_by_name(element_name, aligned_byte_offset, semantic_index):
     if element_name == b"POSITION":
@@ -195,8 +169,8 @@ def set_offset_by_name(element_name, aligned_byte_offset, semantic_index):
         OFFSET_BLENDINDICES = aligned_byte_offset
 
 
-
 def get_rectified_vertex(vertex):
+    # TODO 这里的每一行vertex_data，都应该是一个单独的数据结构，最后再拼接出来，拼接的过程在类中实现而不是代码中
     vertex_decode = vertex.decode()
     original_index = vertex_decode[vertex_decode.find("]+"):vertex_decode.find("]+") + 2 + 3]
     original_name = vertex_decode[vertex_decode.find("]+")+6: vertex_decode.find(": ")]
@@ -337,25 +311,17 @@ def revise_model_by_output_control(rectified_triangle_list):
     return newlist
 
 
-def main():
-    # 设置当前目录
-    # now_path = os.path.abspath(os.path.dirname(__file__))
-
-    os.chdir(work_dir)
-    print("当前工作目录：" + str(work_dir))
-    print("----------------------------------------------------------------")
-
-    # 创建output目录，用于存放输出后的脚本
-    if not os.path.exists('output'):
-        os.mkdir('output')
-
+def read_pointlist_trianglelist():
+    """
+    read all dump files, and filter which topology is pointlist and which topology is trianglelist.
+    :return:
+    """
     # 文件开头的索引数字
     indices = sorted([re.findall('^\d+', x)[0] for x in glob.glob('*-vb0*txt')])
 
     # 分别装载pointlist技术和triangle技术
     pointlist_vb_list = []
     triangle_vb_list = []
-
 
     for file_index in range(len(indices)):
         # 获取IB文件列表，要么没有，要么只有一个
@@ -366,7 +332,7 @@ def main():
 
         # 如果不存在ib文件，则直接跳过此索引不进行处理
         if ib_files.__len__() == 0:
-            print("由于blender暂不支持无ib文件类型，所以跳过不处理")
+            print("This version of script can not process vb information without ib file.")
             continue
 
         # 获取ib文件名并输出
@@ -395,14 +361,14 @@ def main():
             output_filename = 'output/' + first_vb_filename
 
             # 这里是pointlist的基础上，文件名中还必须包含根源VB，可能因为正确的blendwidth 和 blendindices是包含在根源VB里的
-            if pointlist_flag and ib_filename.__contains__(NARAKA_ROOT_VS):
+            if pointlist_flag and ib_filename.__contains__(GLOBAL_ROOT_VS):
                 pointlist_vb = VbFileInfo()
                 pointlist_vb.vertex_model = vertex_model
                 pointlist_vb.vertex_data = vertex_data
                 pointlist_vb.output_filename = output_filename
                 pointlist_vb_list.append(pointlist_vb)
             # 这里ib的文件名还要包含我们指定的vb，限制范围，防止出现找到多个pointlist
-            elif ib_filename.__contains__(NARAKA_INPUT_VB):
+            elif ib_filename.__contains__(GLOBAL_INPUT_VB):
                 trianglelist_vb = VbFileInfo()
                 trianglelist_vb.vertex_model = vertex_model
                 trianglelist_vb.vertex_data = vertex_data
@@ -410,6 +376,22 @@ def main():
                 triangle_vb_list.append(trianglelist_vb)
                 # 复制ib文件到output目录
                 shutil.copy2(ib_filename, 'output/' + ib_filename)
+
+    return pointlist_vb_list, triangle_vb_list
+
+
+def merge_vb_files():
+    # 设置当前工作目录
+    # now_path = os.path.abspath(os.path.dirname(__file__))
+    os.chdir(work_dir)
+    print("当前工作目录：" + str(work_dir))
+    print("----------------------------------------------------------------")
+
+    # 创建output目录，用于存放输出后的脚本
+    if not os.path.exists('output'):
+        os.mkdir('output')
+
+    pointlist_vb_list, triangle_vb_list = read_pointlist_trianglelist()
 
     # 根据pointlist，修正trianglelist中的信息
     rectified_triangle_list = revise_trianglelist_by_pointlist(triangle_vb_list, pointlist_vb_list)
@@ -430,15 +412,13 @@ def main():
 
 
 if __name__ == "__main__":
-    # 殷紫萍衣服
-    # Naraka_INPUT_VB = "9f655a36"
+    # TODO 这里是用全局变量来传递，后续改成用参数传递
+    GLOBAL_ROOT_VS = "e8425f64cfb887cd"  # Naraka root vs
+    GLOBAL_INPUT_VB = "794d8782"  # 胡桃黑丝衣服
+    GLOBAL_ELEMENT_NUMBER = b"13"  # Naraka element number
 
-    # 胡桃黑丝衣服
-    NARAKA_INPUT_VB = "794d8782"
-
-    main()
-    move_dds_file()
-    move_cb_file()
+    merge_vb_files()
+    move_related_files()
 
     # 默认不移动buf文件，因为对不上
     # move_buf_file()
