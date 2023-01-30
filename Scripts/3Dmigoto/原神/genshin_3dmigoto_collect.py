@@ -604,7 +604,7 @@ def construct_combined_buffer(buffer_data, element_format):
     print("\n创建组合后的buffer")
     vb_merged = ""
 
-    # 这里是拼接header，stride初始化为0后，遍历加上每个bytewidth,TODO 是不是需要验证一下这里的stride组合和我的脚本是否一样
+    # 这里是拼接header，stride初始化为0后，遍历加上每个bytewidth
     stride = 0
     for element in element_format:
         stride += element['bytewidth']

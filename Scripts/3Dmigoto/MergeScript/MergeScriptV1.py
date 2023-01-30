@@ -653,7 +653,7 @@ def revise_trianglelist_by_pointlist(triangle_vb_list, pointlist_vb_list):
         elif count == 1:
             print("找到了对应的pointlist，进行替换")
             # TODO 这里目前还不确定是全部替换比较好，还是只替换部分比较好,先运行试试，有可能存在element数量不一致情况
-            triangle_vb.vertex_data_list = right_pointlist_vb.vertex_data
+            triangle_vb.vertex_data_list = right_pointlist_vb.vertex_data_list
 
             print(right_pointlist_vb.output_filename)
         else:
