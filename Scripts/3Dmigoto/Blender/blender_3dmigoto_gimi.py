@@ -1360,7 +1360,7 @@ def export_3dmigoto_genshin(operator, context, object_name, vb_path, ib_path, fm
 
 def generate_mod_folder(path, character_name, use_original_tangents):
 
-    parent_folder = os.path.join(path, "../")
+    parent_folder = os.path.join(path, "../../")
 
     char_hash = load_hashes(path, character_name, "hash.json")
     create_mod_folder(parent_folder, character_name)
@@ -1716,7 +1716,7 @@ class KDTree(object):
 
 
 def load_hashes(path, name, hashfile):
-    parent_folder = os.path.join(path, "../")
+    parent_folder = os.path.join(path, "../../")
     if hashfile not in os.listdir(path):
         print("WARNING: Could not find hash.info in character directory. Falling back to hash_info.json")
         if "hash_info.json" not in os.listdir(parent_folder):

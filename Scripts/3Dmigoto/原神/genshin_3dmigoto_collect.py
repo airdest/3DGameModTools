@@ -336,6 +336,7 @@ def collect_relevant_ids(frame_dump_folder, draw_vb_hashes, use_lower=False):
         if draw_vb_hash[0].lower() == "x":
             draw_vb_hash = draw_vb_hash[1:]
             texture_only_flag = True
+
         relevant_id_group = []
         relevant_id_size_group = []
         relevant_ids_first_index_group = []
@@ -347,6 +348,7 @@ def collect_relevant_ids(frame_dump_folder, draw_vb_hashes, use_lower=False):
                 if not first_vs and int(draw_id) > 10:
                     first_vs = filename.split("vs=")[1].split("-")[0]
                     print(f"\nFound first VS: {first_vs}")
+
                 # I still don't really understand what the lower ids that show up sometimes are for, but there needs
                 #   to be some method of allowing them to be used in case the object we are scraping is one of the few in the scene
                 if draw_id not in relevant_id_group and (use_lower or int(draw_id)>10):
