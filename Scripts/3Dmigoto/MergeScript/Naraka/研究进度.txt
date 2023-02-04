@@ -42,3 +42,48 @@ pointlist中有COLOR属性，但所有TEXCOORD1、2、3、4、5、6、7都和COL
 所以怀疑正确的TEXCOORD坐标实际上不在pointlist中，现在开始测试
 算了，还是先做其它游戏的mod来积累经验吧，累了，这玩意没人指路真的难顶。
 
+
+搜索了一下：
+I think you should have noticed that some of the VB/IB files unpacked using g1m_export are not readable by blender, mainly the hair and clothing parts, the positions of these files are 4D(x,y,z,w) data, not the usual 3D(x,y,z) data, so the generic blender_ 3dmigoto.py plugin does not recognize them.
+Maybe someone has already made a plugin that can read 4D mesh properly, but I didn't find it.
+The only plugin I found was this one.
+https://www.loverslab.com/topic/178718-fatal-frame-maiden-of-the-black-water-nude-mods/?do=findComment&comment=3746272
+
+Unfortunately it reads 4D mesh, but the shape and position is not correct.
+If I use noesis and g1m2fbx, the fbx model I get, the shape and position is also wrong.
+原来是目前的3dmigoto导入脚本无法正确导入4d的衣服，那试试原神的导入脚本？？
+
+
+最新进度，发现一些皮肤是由vb0和vb1组成，一般vb1中存放TEXCOORD的信息，而TEXCOORD1、2、3、4、5、6、7都是不存在的
+所以我们最终导出的vb文件必须包含TEXCOORD信息，且参考了一个split脚本，需要将vb文件切割为vb0，vb1
+但是他的切割文件是有问题的，所以需要我自己写一个切割脚本
+然后就是TEXCOORD1其实是不用保留的，只需要TEXCOORD，之所以之前导入到游戏后全是白光，那是因为缺少了TEXCOORD信息，也就是UV信息
+导致UV材质无法正确覆盖上去，所以产生了白光，推测白光可能是底部的光源。
+所以，现在开始研究split脚本。
+
+
+
+观察发现，最终的vb文件是这样，没有blendwight等信息，也就是只有POSITION、NORMAL、TANGENT三种信息在vb0 ，TEXCOORD一种信息在VB1
+vb0[0]+000 POSITION: 0.0623825192, 0.0440697819, 0.280035198
+vb0[0]+012 NORMAL: 0.109487124, -0.540115118, -0.833635986
+vb0[0]+000 TANGENT: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 COLOR: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 TEXCOORD1: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 TEXCOORD2: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 TEXCOORD3: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 TEXCOORD4: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 TEXCOORD5: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 TEXCOORD6: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 TEXCOORD7: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 BLENDWEIGHTS: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+vb0[0]+000 BLENDINDICES: 0.815686285, 0.517647088, 0.498039216, 0.239215687
+
+但是有的会额外多出vb3，多一个TEXCOORD4的属性
+
+经研究发现，原始的pointlist中
+vb0存放POSITION，NORMAL。TANGENT，COLOR
+vb1存放TEXCOORD
+vb2存放BLENDWEIGHTS，BLENDINDICES
+
+
+分割脚本用到了.splitdata，好像原神也用到了，为什么？

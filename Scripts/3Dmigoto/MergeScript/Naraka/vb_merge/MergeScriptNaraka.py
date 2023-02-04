@@ -1,4 +1,4 @@
-from DataStructureNaraka import *
+from MergeStructureNaraka import *
 
 
 def get_header_info(vb_file_name):
@@ -297,6 +297,12 @@ def revise_trianglelist_by_pointlist(triangle_vb_list, pointlist_vb_list):
         for pointlist_vb in pointlist_vb_list:
             if vertex_count == pointlist_vb.header_info.vertex_count:
                 right_pointlist_vb = pointlist_vb
+                print("---------------------------------")
+                print(right_pointlist_vb.header_info.file_index)
+                print(triangle_vb.header_info.file_index)
+                print("---------------------------------")
+
+
                 count = count + 1
 
         if right_pointlist_vb is None:

@@ -164,7 +164,15 @@ def output_model_txt(vb_file_info):
     for vertex_data_chunk in vertex_data_chunk_test:
         vertex_data_chunk_has_element_list.append(vertex_data_chunk.element_name)
 
-    # 第二步：根据上一步获取的真实存在的Element元素，得出可以输出的元素列表
+    # 第二步:根据可输出的元素列表，删除header元素列表中的元素
+    new_list = []
+    for element in header_info.elementlist:
+        element_name = element.semantic_name + element.semantic_index
+        if vertex_data_chunk_has_element_list.__contains__(element_name):
+            new_list.append(element)
+    header_info.elementlist = new_list
+
+    # 第三步：获取header_info中真实存在的Element元素有哪些
     # TODO 总感觉这一步有一点冗余？？？
     header_info_has_element_list = []
     for element in header_info.elementlist:
@@ -172,14 +180,6 @@ def output_model_txt(vb_file_info):
         if element.semantic_name == b"ATTRIBUTE" and element.semantic_index != b"0":
             name = element.semantic_name + element.semantic_index
         header_info_has_element_list.append(name)
-
-    # 第三步:根据可输出的元素列表，删除元素列表中的元素
-    new_list = []
-    for element in header_info.elementlist:
-        element_name = element.semantic_name + element.semantic_index
-        if vertex_data_chunk_has_element_list.__contains__(element_name):
-            new_list.append(element)
-    header_info.elementlist = new_list
 
     # 第四步：重新计算各元素的aligned_byte_offset
     new_element_lsit, stride = get_element_byte_aligned_offset(header_info.elementlist)

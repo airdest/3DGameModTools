@@ -26,8 +26,8 @@ RELATED_VB_INDEX_LIST = []  # The related file number indices from your input vb
 WORK_DIR = None  # for setting work dir
 GLOBAL_ELEMENT_NUMBER = None  # The number of element a dump vb txt file contains, start from 0, format: b"number".
 GLOBAL_ROOT_VS = None  # the vertex shader which contains character's animation information.
-GLOBAL_INPUT_IB = None  # the ib file hash you want to merge.
-GLOBAL_INPUT_VB = None  # the vb file hash you want to merge,which contains the real TEXCOORD info.
+GLOBAL_INPUT_IB = None  # the ib file hash you want to vb_merge.
+GLOBAL_INPUT_VB = None  # the vb file hash you want to vb_merge,which contains the real TEXCOORD info.
 
 
 class HeaderInfo:
@@ -68,7 +68,7 @@ class VertexData:
         if line_bytes != b"":
             line_str = str(line_bytes.decode())
             # vb_file_number = line_str.split("[")[0]
-            # because we merge into one file, so it always be vb0
+            # because we vb_merge into one file, so it always be vb0
             vb_file_number = "vb0"
             self.vb_file_number = vb_file_number.encode()
 

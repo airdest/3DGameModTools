@@ -459,11 +459,11 @@ class VertexBuffer(object):
 
     def merge(self, other):
         if self.layout != other.layout:
-            raise Fatal('Vertex buffers have different input layouts - ensure you are only trying to merge the same vertex buffer split across multiple draw calls')
+            raise Fatal('Vertex buffers have different input layouts - ensure you are only trying to vb_merge the same vertex buffer split across multiple draw calls')
         if self.first != other.first:
             # FIXME: Future 3DMigoto might automatically set first from the
             # index buffer and chop off unreferenced vertices to save space
-            raise Fatal('Cannot merge multiple vertex buffers - please check for updates of the 3DMigoto import script, or import each buffer separately')
+            raise Fatal('Cannot vb_merge multiple vertex buffers - please check for updates of the 3DMigoto import script, or import each buffer separately')
         self.vertices.extend(other.vertices[self.vertex_count:])
         self.vertex_count = max(self.vertex_count, other.vertex_count)
         assert(len(self.vertices) == self.vertex_count)
@@ -559,7 +559,7 @@ class IndexBuffer(object):
 
     def merge(self, other):
         if self.format != other.format:
-            raise Fatal('Index buffers have different formats - ensure you are only trying to merge the same index buffer split across multiple draw calls')
+            raise Fatal('Index buffers have different formats - ensure you are only trying to vb_merge the same index buffer split across multiple draw calls')
         self.first = min(self.first, other.first)
         self.index_count += other.index_count
         self.faces.extend(other.faces)
@@ -579,7 +579,7 @@ class IndexBuffer(object):
 
 def load_3dmigoto_mesh_bin(operator, vb_paths, ib_paths, pose_path):
     if len(vb_paths) != 1 or len(ib_paths) > 1:
-        raise Fatal('Cannot merge meshes loaded from binary files')
+        raise Fatal('Cannot vb_merge meshes loaded from binary files')
 
     # Loading from binary files, but still need to use the .txt files as a
     # reference for the format:

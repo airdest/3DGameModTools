@@ -22,7 +22,7 @@ RELATED_VB_INDEX_LIST = []  # The related file number indices from your input vb
 # 000002,000003, use this to confirm which file should be moved to output folder.
 
 WORK_DIR = None  # for setting work dir
-GLOBAL_INPUT_IB = None  # the ib file hash you want to merge.
+GLOBAL_INPUT_IB = None  # the ib file hash you want to vb_merge.
 
 
 class HeaderInfo:
@@ -105,7 +105,7 @@ class VertexData:
         if line_bytes != b"":
             line_str = str(line_bytes.decode())
             # vb_file_number = line_str.split("[")[0]
-            # because we merge into one file, so it always be vb0
+            # because we vb_merge into one file, so it always be vb0
             vb_file_number = "vb0"
             self.vb_file_number = vb_file_number.encode()
 

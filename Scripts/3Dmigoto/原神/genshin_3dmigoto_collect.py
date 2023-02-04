@@ -185,7 +185,7 @@ def main():
             # If position, blend and texcoord are not the same length we cannot construct an output file
             if blend and (len(position) != len(blend) or len(blend) != len(texcoord)):
                 print(f"\nERROR: Size mismatch between buffers. Position: {len(position)}, Blend: {len(blend)}, Texcoord: {len(texcoord)}.")
-                print("This usually occurs because the program is attempting to merge incompatible objects since it is unable to identify the correct ones")
+                print("This usually occurs because the program is attempting to vb_merge incompatible objects since it is unable to identify the correct ones")
                 print("Try looking at the frame dump, and using --force to tell the program what draw ids to use")
 
                 print("If you want to continue dumping the object anyway, type y (though note that it will export with issues and not re-import into the game correctly)")
