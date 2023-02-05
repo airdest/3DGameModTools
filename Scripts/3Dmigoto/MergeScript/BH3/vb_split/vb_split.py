@@ -73,13 +73,6 @@ if __name__ == "__main__":
             f.write(write_data)
 
 
-
-
-
-
-
-
-
     # Create the beginnings of an ini file
     ini_text = []
     # ini file - VB Resources
