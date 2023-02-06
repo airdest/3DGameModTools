@@ -551,6 +551,6 @@ if __name__ == "__main__":
         output_model_txt(rectfied_vb_file_info.header_info, rectfied_vb_file_info.vertex_data_chunk_list, rectfied_vb_file_info.output_filename)
 
     # 移动相关联的文件
-    move_related_files(move_dds=True, move_pscb=False, move_vscb=False)
+    move_related_files(move_dds=False, move_pscb=False, move_vscb=False)
     print("全部转换完成！")
 
