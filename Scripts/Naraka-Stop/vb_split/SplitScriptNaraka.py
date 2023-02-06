@@ -6,6 +6,7 @@ from SplitStructureNaraka import *
 
 GLOBAL_ELEMENT_NUMBER = None
 
+
 def get_header_info(vb_file_name):
 
     vb_file = open(vb_file_name, 'rb')
@@ -28,6 +29,9 @@ def get_header_info(vb_file_name):
         # 处理header
         if not header_process_over:
             # TODO 这里不够兼容，因为不能处理first vertex在各个vb文件中不同的情况，具体后续再测试吧
+            if line.startswith(b"stride: "):
+                stride = line[line.find(b"stride") + b"stride: ".__len__():line.find(b"\r\n")]
+                header_info.stride = stride
             # 设置first_vertex,因为所有文件的first_vertex都是相同的，都是0，所以这里会取最后一次的first_vertex
             if line.startswith(b"first vertex: "):
                 first_vertex = line[line.find(b"first vertex: ") + b"first vertex: ".__len__():line.find(b"\r\n")]
@@ -104,7 +108,7 @@ if __name__ == "__main__":
     os.chdir(work_dir)
 
     # 设置常量
-    GLOBAL_ELEMENT_NUMBER = b"7"
+    GLOBAL_ELEMENT_NUMBER = b"6"
 
     # 各文件名称
     source_name = "guqinghan"
@@ -119,5 +123,100 @@ if __name__ == "__main__":
     # TODO 首先解析FMT文件，读取按顺序的Element元素信息
     header_info = get_header_info(fmt_name)
 
+    # TODO 首先要明确这个vertex-data最终要拆分成几部分：
+    # TODO vb0, vb1, vb2
+    # TODO 目前可以确定vb1只有TEXCOORD一个属性，接下来就看BLENDWIDTH和BLENDINDICES放哪儿了
+    """
+    elementnumber分别是
+    vb0存放POSITION，NORMAL。TANGENT，COLOR （测试TEXCOORD1） 0,1,2,3,5
+    vb1存放TEXCOORD  4  
+    vb2存放BLENDWEIGHTS，BLENDINDICES  6,7
+    """
 
-    
+    # fmt文件的原始步长
+
+    combined_stride = int(header_info.stride.decode())
+
+    # vertex_data的数量
+    vertex_count = int(len(vb_file_buffer) / combined_stride)
+
+    # aligned_byte_offsets
+    offset_list = []
+
+    # strides
+    width_list = []
+
+
+
+    # 初始化offset_list和width_list，方便后续使用
+    for element in header_info.elementlist:
+        offset_list.append(int(element.aligned_byte_offset.decode()))
+        width_list.append(element.byte_width)
+    print(width_list)
+
+    # 用来存放解析好的vertex_data
+    vertex_data_list = [[] for i in range(vertex_count)]
+
+
+    # 解析vertex_data并装入vertex_data_list
+    for index in range(len(width_list)):
+        for i in range(vertex_count):
+            start_index = i * combined_stride + offset_list[index]
+            vertex_data = vb_file_buffer[start_index:start_index + width_list[index]]
+            vertex_data_list[i].append(vertex_data)
+
+    print(vertex_data_list[0])
+
+    # 解析vertex_data_list，分别装载vb0,vb1,vb2
+    vb0_vertex_data = [[] for i in range(vertex_count)]
+    vb1_vertex_data = [[] for i in range(vertex_count)]
+    vb2_vertex_data = [[] for i in range(vertex_count)]
+
+    for index in range(len(width_list)):
+        for i in range(vertex_count):
+            # POSITION
+            if index == 0:
+                vb0_vertex_data[i].append(vertex_data_list[i][0])
+            # NORMAL
+            if index == 1:
+                vb0_vertex_data[i].append(vertex_data_list[i][1])
+            # TANGENT
+            if index == 2:
+                vb0_vertex_data[i].append(vertex_data_list[i][2])
+            # COLOR
+            if index == 3:
+                vb0_vertex_data[i].append(vertex_data_list[i][3])
+            # TEXCOORD
+            if index == 4:
+                vb1_vertex_data[i].append(vertex_data_list[i][4])
+
+            if index == 5:
+                vb0_vertex_data[i].append(vertex_data_list[i][5])
+            if index == 6:
+                vb0_vertex_data[i].append(vertex_data_list[i][6])
+
+
+
+    vb0_bytes = b""
+    for vertex_data in vb0_vertex_data:
+        for data in vertex_data:
+            vb0_bytes = vb0_bytes + data
+    vb1_bytes = b""
+    for vertex_data in vb1_vertex_data:
+        for data in vertex_data:
+            vb1_bytes = vb1_bytes + data
+    # vb2_bytes = b""
+    # for vertex_data in vb2_vertex_data:
+    #     for data in vertex_data:
+    #         vb2_bytes = vb2_bytes + data
+
+    output_vb0_filename = source_name + ".vb0"
+    output_vb1_filename = source_name + ".vb1"
+    # output_vb2_filename = source_name + ".vb2"
+
+    with open(output_vb0_filename, "wb+") as output_vb0_file:
+        output_vb0_file.write(vb0_bytes)
+    with open(output_vb1_filename, "wb+") as output_vb1_file:
+        output_vb1_file.write(vb1_bytes)
+    # with open(output_vb2_filename, "wb+") as output_vb2_file:
+    #     output_vb2_file.write(vb2_bytes)

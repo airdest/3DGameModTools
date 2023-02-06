@@ -1,0 +1,51 @@
+关于HLSL：
+
+http://www.msdn.com/DirectX
+
+跟HLSL关系不大是一些游戏制作的基础知识
+https://learn.microsoft.com/en-us/previous-versions/windows/apps/hh452744(v=win.10)?redirectedfrom=MSDN
+
+应该是很重要，很多大佬在论坛里交流（可能需要梯子）
+https://developer.nvidia.com/
+
+https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl
+
+
+
+ShaderReplace
+VS
+ VertexShader
+PS
+PeerShader  PixelShader
+一个VertexShader里有多个PeerShader/Pixel Shader
+CS
+ComputeShader
+GS
+GeometryShader
+FS
+Fragment Shader
+
+ps-t0
+pixel shader texture slot 0
+ render target
+
+ UAV
+
+ResourceCopy部分
+ s-cb
+ Constant Buffers
+ vb
+ Vertex Buffers
+ ib
+ Index Buffers
+ so
+ Stream Output Buffers
+ s-t
+ Textures
+ o
+ Render Targets
+ oD
+ Depth Targets
+ ps-u / cs-u
+ Unordered Access Views
+

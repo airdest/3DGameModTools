@@ -484,10 +484,10 @@ def read_pointlist_trianglelist():
 
 if __name__ == "__main__":
 
-    GLOBAL_ROOT_VS = "e8425f64cfb887cd"  # Naraka root vs
+    GLOBAL_ROOT_VS = "e8425f64cfb887cd"  # Naraka-Stop root vs
     GLOBAL_INPUT_IB = "f4d034ca"  # 顾清寒
     GLOBAL_INPUT_VB = "f4d034ca"  # 顾清寒
-    GLOBAL_ELEMENT_NUMBER = b"13"  # Naraka element number
+    GLOBAL_ELEMENT_NUMBER = b"13"  # Naraka-Stop element number
     # setting work dir
     WORK_DIR = "C:/Users/Administrator/Desktop/FrameAnalysis-2023-01-31-153146/"
 

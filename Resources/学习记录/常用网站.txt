@@ -1,0 +1,79 @@
+NVDIA API学习
+https://developer.nvidia.com/rtx/path-tracing/nvapi/get-started
+
+Shader Model5 Assembly (不知道指令含义可以在这里搜索并学习)
+https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/shader-model-5-assembly--directx-hlsl-
+
+Shader Models vs Shader Profiles
+https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-models
+
+什么是Compute Shader：
+https://learn.microsoft.com/en-us/windows/win32/direct3d11/direct3d-11-advanced-stages-compute-shader
+
+Shader Model 5 Attributes
+https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/d3d11-graphics-reference-sm5-attributes
+
+
+Data Types (HLSL)
+https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-data-types
+
+grepWin,好用的文件搜索工具
+https://github.com/stefankueng/grepWin/releases/tag/2.0.11
+
+QuickBMS 用来打开锅铲之光的文件
+https://aluigi.altervista.org/quickbms.htm
+
+Blender导入3dmigoto生产的ib.txt文件插件
+https://github.com/DarkStarSword/3d-fixes/blob/master/blender_3dmigoto.py
+
+notepad++
+用来编辑txt文件
+https://notepad-plus-plus.org/
+
+
+galaxy17的bilibili教程
+https://www.bilibili.com/read/cv18551197/
+
+DarkSword大佬的github
+https://github.com/DarkStarSword
+
+paint.net画图工具，配合PS使用
+https://www.getpaint.net/
+
+
+D3DX11教程
+https://learn.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-resources?source=recommendations
+
+模型导出融合脚本参考，3dmigoto导出的文件进行合并的脚本，需要改写才能使用：
+https://github.com/eArmada8/vbuffer_merge_split/releases
+https://github.com/eArmada8/vbuffer_merge_split/tree/complex_inputslots
+
+首先有两款工具：
+● Helixmod dx9  assembly shaders
+● 3DMigoto dx11 HLSL shaders
+看这个教程来学习原理，教程是dx9的，但原理是相通的。
+https://www.youtube.com/watch?v=wBEGq0fhlHY
+
+下面这个链接是关于helixmod的，可以参考：
+https://helixmod.blogspot.com/2010/12/how-to-guides.html
+
+Wiki百科关于Shader的讲解
+https://en.wikipedia.org/wiki/Shader
+
+Yotube上关于Shader的介绍
+https://www.youtube.com/watch?v=TDZMSozKZ20
+
+上面说了一堆，都跟dx11没关系，dx11主要是3dmigoto。
+首先你要学会d3dx.ini的用法，理解里面内容的含义。
+
+3dmigoto的WIKI，非常重要
+https://github.com/bo3b/3Dmigoto/wiki
+
+
+
+
+
+
+
+
+
