@@ -240,7 +240,7 @@ def is_pointlist_file(filename):
     return pointlist_flag
 
 
-def move_related_files():
+def move_related_files(move_dds=True, move_vscb=True,move_pscb=True):
     # 设置当前目录
     os.chdir(WORK_DIR)
 
@@ -248,40 +248,44 @@ def move_related_files():
     if not os.path.exists('output'):
         os.mkdir('output')
 
-    print("----------------------------------------------------------------")
-    print("开始移动.dds贴图文件")
-    # 移动dds贴图文件
-    filenames = glob.glob('*.dds')
-    for filename in filenames:
-        if os.path.exists(filename):
-            for index in RELATED_VB_INDEX_LIST:
-                if filename.__contains__(index):
-                    # print("正在处理： " + filename + " ....")
-                    shutil.copy2(filename, 'output/' + filename)
+    if move_dds:
+        print("----------------------------------------------------------------")
+        print("开始移动.dds贴图文件")
+        # 移动dds贴图文件
+        filenames = glob.glob('*.dds')
+        for filename in filenames:
+            if os.path.exists(filename):
+                for index in RELATED_VB_INDEX_LIST:
+                    if filename.__contains__(index):
+                        # print("正在处理： " + filename + " ....")
+                        shutil.copy2(filename, 'output/' + filename)
 
-    print("----------------------------------------------------------------")
-    print("开始移动vs-cb骨骼txt文件")
-    # 移动vs-cb骨骼文件
-    filenames = glob.glob('*vs-cb*')
-    for filename in filenames:
-        if os.path.exists(filename):
-            # 必须包含指定vb的索引才能移动
-            for index in RELATED_VB_INDEX_LIST:
-                if filename.__contains__(index):
-                    # print("正在移动： " + filename + " ....")
-                    shutil.copy2(filename, 'output/' + filename)
+    if move_vscb:
+        print("----------------------------------------------------------------")
+        print("开始移动vs-cb骨骼txt文件")
+        # 移动vs-cb骨骼文件
+        filenames = glob.glob('*vs-cb*')
+        for filename in filenames:
+            if os.path.exists(filename):
+                # 必须包含指定vb的索引才能移动
+                for index in RELATED_VB_INDEX_LIST:
+                    if filename.__contains__(index):
+                        # print("正在移动： " + filename + " ....")
+                        shutil.copy2(filename, 'output/' + filename)
 
-    print("----------------------------------------------------------------")
-    print("开始移动ps-cb骨骼txt文件")
-    # 移动ps-cb骨骼文件
-    filenames = glob.glob('*ps-cb*')
-    for filename in filenames:
-        if os.path.exists(filename):
-            # 必须包含指定vb的索引才能移动
-            for index in RELATED_VB_INDEX_LIST:
-                if filename.__contains__(index):
-                    # print("正在移动： " + filename + " ....")
-                    shutil.copy2(filename, 'output/' + filename)
+    if move_pscb:
+        print("----------------------------------------------------------------")
+        print("开始移动ps-cb骨骼txt文件")
+        # 移动ps-cb骨骼文件
+        filenames = glob.glob('*ps-cb*')
+        for filename in filenames:
+            if os.path.exists(filename):
+                # 必须包含指定vb的索引才能移动
+                for index in RELATED_VB_INDEX_LIST:
+                    if filename.__contains__(index):
+                        # print("正在移动： " + filename + " ....")
+                        shutil.copy2(filename, 'output/' + filename)
+
 
 
 def revise_trianglelist_by_pointlist(triangle_vb_list, pointlist_vb_list):
@@ -547,6 +551,6 @@ if __name__ == "__main__":
         output_model_txt(rectfied_vb_file_info.header_info, rectfied_vb_file_info.vertex_data_chunk_list, rectfied_vb_file_info.output_filename)
 
     # 移动相关联的文件
-    move_related_files()
+    move_related_files(move_dds=True, move_pscb=False, move_vscb=False)
     print("全部转换完成！")
 
