@@ -1,7 +1,7 @@
-from MergeStructureNaraka import *
+from MergeStructureGI import *
 
 
-def get_header_info(vb_file_name):
+def get_header_info(vb_file_name, max_element_number):
 
     vb_file = open(vb_file_name, 'rb')
 
@@ -83,7 +83,7 @@ def get_header_info(vb_file_name):
                 # 单个处理完毕
                 elements_single_process_over = True
 
-            if element_tmp.element_number == GLOBAL_ELEMENT_NUMBER and elements_single_process_over:
+            if element_tmp.element_number == max_element_number and elements_single_process_over:
                 header_info.elementlist = element_list
                 elements_all_process_over = True
                 break
@@ -256,7 +256,7 @@ def move_related_files():
         if os.path.exists(filename):
             for index in RELATED_VB_INDEX_LIST:
                 if filename.__contains__(index):
-                    print("正在处理： " + filename + " ....")
+                    # print("正在处理： " + filename + " ....")
                     shutil.copy2(filename, 'output/' + filename)
 
     print("----------------------------------------------------------------")
@@ -268,7 +268,7 @@ def move_related_files():
             # 必须包含指定vb的索引才能移动
             for index in RELATED_VB_INDEX_LIST:
                 if filename.__contains__(index):
-                    print("正在移动： " + filename + " ....")
+                    # print("正在移动： " + filename + " ....")
                     shutil.copy2(filename, 'output/' + filename)
 
     print("----------------------------------------------------------------")
@@ -280,11 +280,13 @@ def move_related_files():
             # 必须包含指定vb的索引才能移动
             for index in RELATED_VB_INDEX_LIST:
                 if filename.__contains__(index):
-                    print("正在移动： " + filename + " ....")
+                    # print("正在移动： " + filename + " ....")
                     shutil.copy2(filename, 'output/' + filename)
 
 
 def revise_trianglelist_by_pointlist(triangle_vb_list, pointlist_vb_list):
+    print("------------------------------------------------")
+    print("开始根据pointlist修正trianglelist：")
     # 根据pointlist，修正trianglelist中的vertex_data信息
     rectified_triangle_list = []
     for triangle_vb in triangle_vb_list:
@@ -297,26 +299,25 @@ def revise_trianglelist_by_pointlist(triangle_vb_list, pointlist_vb_list):
         for pointlist_vb in pointlist_vb_list:
             if vertex_count == pointlist_vb.header_info.vertex_count:
                 right_pointlist_vb = pointlist_vb
-                print("---------------------------------")
-                print(right_pointlist_vb.header_info.file_index)
-                print(triangle_vb.header_info.file_index)
-                print("---------------------------------")
-
-
                 count = count + 1
 
+        print("当前正在处理：" + str(triangle_vb.header_info.file_index))
         if right_pointlist_vb is None:
             print("未找到对应的pointlist")
             print("vertexcount"+str(vertex_count))
         elif count == 1:
-            print("找到了对应的pointlist，进行替换")
+            print("找到了对应的pointlist，pointlist的index是: " + str(right_pointlist_vb.header_info.file_index))
             # TODO 这里目前还不确定是全部替换比较好，进行测试
             triangle_vb.vertex_data_chunk_list = right_pointlist_vb.vertex_data_chunk_list
+            # TODO 这里header info 也要交换，因为pointlist有10个，trianglelist只有8个
+            if right_pointlist_vb.header_info.elementlist is None:
+                print("但是这个pointlist的elementlist是空的")
+                exit(1)
+            triangle_vb.header_info.elementlist = right_pointlist_vb.header_info.elementlist
             print(right_pointlist_vb.output_filename)
         else:
             # 这里触发找到了多个对应pointlist的原因是trianglelist那里我们没有对输入的vb做限制
             print("找到了多个对应的pointlist？？？")
-
             exit(1)
         # 加入到修正后的列表中
         rectified_triangle_list.append(triangle_vb)
@@ -324,9 +325,12 @@ def revise_trianglelist_by_pointlist(triangle_vb_list, pointlist_vb_list):
 
 
 def revise_model_by_output_control(revised_triangle_list):
+    print("----------------------------------------")
+    print("开始输出前信息检查：")
     # 第一步: 删除不想输出的element，反过来说就是只保留你想要的element
     new_list = []
     for vb_file_info in revised_triangle_list:
+        print("正在处理：" + str(vb_file_info.header_info.file_index))
         element_list = vb_file_info.header_info.elementlist
         new_element_lsit = []
         for element in element_list:
@@ -336,7 +340,7 @@ def revise_model_by_output_control(revised_triangle_list):
                 new_element_lsit.append(element)
             if element.semantic_name == b"TANGENT":
                 new_element_lsit.append(element)
-            if element.semantic_name == b"BLENDWEIGHTS":
+            if element.semantic_name == b"BLENDWEIGHT":
                 new_element_lsit.append(element)
             if element.semantic_name == b"BLENDINDICES":
                 new_element_lsit.append(element)
@@ -345,8 +349,8 @@ def revise_model_by_output_control(revised_triangle_list):
             if element.semantic_name == b"TEXCOORD":
                 if element.semantic_index == b"0":
                     new_element_lsit.append(element)
-                # if element.semantic_index == b"1":
-                #     new_element_lsit.append(element)
+                if element.semantic_index == b"1":
+                    new_element_lsit.append(element)
                 # if element.semantic_index == b"2":
                 #     new_element_lsit.append(element)
                 # if element.semantic_index == b"3":
@@ -413,10 +417,6 @@ def get_element_byte_aligned_offset_and_stride(element_list):
 
 
 def read_pointlist_trianglelist():
-    """
-    read all dump files, and filter which topology is pointlist and which topology is trianglelist.
-    :return:
-    """
     # 文件开头的索引数字
     indices = sorted([re.findall('^\d+', x)[0] for x in glob.glob('*-vb0*txt')])
 
@@ -425,26 +425,56 @@ def read_pointlist_trianglelist():
     trianglelist_topology = []
 
     for index_number in range(len(indices)):
-        # 获取IB文件列表，要么没有，要么只有一个
+        # 获取IB文件列表，要么没有，要么只有一个,如果不存在ib文件，则直接跳过此索引不进行处理
         ib_files = glob.glob(indices[index_number] + '-ib*txt')
+        has_ib_file = True
+        if ib_files.__len__() == 0:
+            has_ib_file = False
+
+        # 获取VB文件列表，如果没有则直接跳过此索引不处理
+        vb_files = glob.glob(indices[index_number] + '-vb*txt')
+        has_vb_file = True
+        if vb_files.__len__() == 0:
+            has_vb_file = False
+
+        # 默认不是pointlist，后续条件判断决定最终结果
+        pointlist_flag = False
+
+        # 如果ib和vb都没有，那就可以跳过了
+        if not has_ib_file and not has_vb_file:
+            continue
+
+        if not has_ib_file and has_vb_file:
+            pointlist_flag = True
+
 
         # 首先获取当前index的所有VB文件的列表
         vb_filenames = sorted(glob.glob(indices[index_number] + '-vb*txt'))
-
-        # 如果不存在ib文件，则直接跳过此索引不进行处理
-        if ib_files.__len__() == 0:
-            print("This version of script can not process vb information without ib file.")
-            continue
-
         # 获取ib文件名并输出
-        ib_filename = str(glob.glob(indices[index_number] + '-ib*txt')[0])
-        print("正在处理: " + ib_filename + "  ....")
+        ib_filename = ""
+        if glob.glob(indices[index_number] + '-ib*txt').__len__() != 0:
+            ib_filename = str(glob.glob(indices[index_number] + '-ib*txt')[0])
+        else:
+            print("特殊情况，无ib文件")
+        print("正在处理: " + indices[index_number] + "  ....")
 
         # 把这个ib的index对应的所有VB文件的内容融合到一个单独的VB文件中
         # 初始化并读取第一个vb文件的header部分信息，因为所有vb文件的header部分长得都一样，所以默认用vb0来读取
         first_vb_filename = vb_filenames[0]
 
-        header_info = get_header_info(first_vb_filename)
+        # 判断是pointlsit还是trianglist
+        if has_ib_file:
+            pointlist_flag = is_pointlist_file(ib_filename)
+
+        # 创建一个header_info
+        header_info = None
+
+        # 这里要区别开进行处理，pointlist是9,trianglelist是7
+        if pointlist_flag:
+            header_info = get_header_info(first_vb_filename, b"9")
+        else:
+            header_info = get_header_info(first_vb_filename, b"7")
+
 
         # 设置当前所属Index
         header_info.file_index = indices[index_number]
@@ -452,35 +482,27 @@ def read_pointlist_trianglelist():
         # 遍历所有vb文件，读取VertexData部分数据
         vertex_data_chunk_list = get_vertex_data_chunk_list(vb_filenames, header_info.vertex_count)
 
-        # 判断是pointlsit还是trianglist
-        # 如果有IB文件，就把IB(index buffer)文件复制到output目录，直接复制不修改内容
-        if os.path.exists(ib_filename):
-            # 遇到pointlist自动跳过且不复制到output目录
-            # 判断是否为topology
-            pointlist_flag = is_pointlist_file(ib_filename)
-            # 这里注意，pointlist文件只用来获取真实的骨骼信息，而不移动到output目录
-            # 这里如果是pointlist文件，就加入专属列表，如果是tranglelist，就加入tranglist列表
-            output_filename = 'output/' + first_vb_filename
+        # 这里如果是pointlist文件，就加入专属列表，如果是tranglelist，就加入tranglist列表
+        output_filename = 'output/' + first_vb_filename
 
-            # 这里是pointlist的基础上，文件名中还必须包含根源VB，可能因为正确的blendwidth 和 blendindices是包含在根源VB里的
-            if pointlist_flag and ib_filename.__contains__(GLOBAL_ROOT_VS):
-                pointlist_vb = VbFileInfo()
-                pointlist_vb.header_info = header_info
-                pointlist_vb.vertex_data_chunk_list = vertex_data_chunk_list
-                pointlist_vb.output_filename = output_filename
-                pointlist_topology.append(pointlist_vb)
-
-            # 这里ib的文件名还要包含我们指定的vb，限制范围，防止出现找到多个pointlist
-            elif ib_filename.__contains__(GLOBAL_INPUT_IB):
-                trianglelist_vb = VbFileInfo()
-                trianglelist_vb.header_info = header_info
-                trianglelist_vb.vertex_data_chunk_list = vertex_data_chunk_list
-                trianglelist_vb.output_filename = output_filename
-                trianglelist_topology.append(trianglelist_vb)
-
-                # 复制ib文件到output目录
-                shutil.copy2(ib_filename, 'output/' + ib_filename)
-
+        # 这里是pointlist的基础上，文件名中还必须包含根源VB，可能因为正确的blendwidth 和 blendindices是包含在根源VB里的
+        if pointlist_flag and (ib_filename.__contains__(GLOBAL_ROOT_VS) or first_vb_filename.__contains__(GLOBAL_ROOT_VS)):
+            pointlist_vb = VbFileInfo()
+            pointlist_vb.header_info = header_info
+            pointlist_vb.vertex_data_chunk_list = vertex_data_chunk_list
+            pointlist_vb.output_filename = output_filename
+            pointlist_topology.append(pointlist_vb)
+        # 这里ib的文件名还要包含我们指定的vb，限制范围，防止出现找到多个pointlist
+        elif not pointlist_flag and ib_filename.__contains__(GLOBAL_INPUT_IB):
+            trianglelist_vb = VbFileInfo()
+            trianglelist_vb.header_info = header_info
+            trianglelist_vb.vertex_data_chunk_list = vertex_data_chunk_list
+            trianglelist_vb.output_filename = output_filename
+            trianglelist_topology.append(trianglelist_vb)
+            # 复制ib文件到output目录
+            shutil.copy2(ib_filename, 'output/' + ib_filename)
+        else:
+            print("此ib文件与设定的IB输入不同，不做处理")
 
 
     return pointlist_topology, trianglelist_topology
@@ -488,12 +510,15 @@ def read_pointlist_trianglelist():
 
 if __name__ == "__main__":
 
-    GLOBAL_ROOT_VS = "e8425f64cfb887cd"  # Naraka-Stop root vs
-    GLOBAL_INPUT_IB = "f4d034ca"  # 顾清寒
-    GLOBAL_INPUT_VB = "f4d034ca"  # 顾清寒
-    GLOBAL_ELEMENT_NUMBER = b"13"  # Naraka-Stop element number
+    # TODO  python genshin_3dmigoto_collect.py -vb dfb54407 -n zhujue
+
+    GLOBAL_ROOT_VS = "653c63ba4a73ca8b"  # 原神 root vs
+    # TODO 测试原神脚本时发现，用IB不能正确得到merge后的结果，但是VB可以，所以这里换成VB试一试？？？
+    # TODO 为什么我的脚本是用IB的，别人的是用 VB的？？两者有什么区别？？
+    GLOBAL_INPUT_IB = "dfb54407"  # 基础角色
+
     # setting work dir
-    WORK_DIR = "C:/Users/Administrator/Desktop/FrameAnalysis-2023-02-06-131149/"
+    WORK_DIR = "C:/Users/Administrator/Desktop/FrameAnalysis-2023-02-06-180919/"
 
     # 设置当前工作目录
     os.chdir(WORK_DIR)

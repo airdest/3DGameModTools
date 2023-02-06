@@ -340,12 +340,14 @@ def convert_wem_to_wav(testexe_path, input_wem_file, output_wav_file):
                                       encoding='gb2312')
     print(decode_process.communicate()[0])
 
+
 def convert_wav_to_wem(testexe_path, input_wav_file, output_wem_file):
     # wav文件转为wem文件
     shell_text = testexe_path + ' -o ' + output_wem_file + ' ' + input_wav_file
     decode_process = subprocess.Popen(shell_text, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                       encoding='gb2312')
     print(decode_process.communicate()[0])
+
 
 def del_file(path_data):
     for i in os.listdir(path_data):  # os.listdir(path_data)#返回一个列表，里面是当前目录下面的所有东西的相对路径

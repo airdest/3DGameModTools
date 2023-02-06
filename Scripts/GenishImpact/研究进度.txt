@@ -1,0 +1,9 @@
+已知事实：
+1.不管是naraka还是genshin，pointlist都只出现在文件名包含ROOT VS的文件中
+
+问题列表：
+1.原神中,Pointlist技术有10个元素，trianglelist有8个元素
+已解决
+2.原神中，真正装载了pointlist技术的文件，是没有ib文件的，也就是说对于
+缺失ib文件的处理，并不能直接跳过，而是要把它默认算作使用到了pointlist技术，然后直接读取vb文件。
+仍有疑问
