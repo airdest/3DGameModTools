@@ -36,6 +36,7 @@ class Element:
         if self.semantic_name == b"BLENDINDICES":
             self.byte_width = 16
 
+
 class HeaderInfo:
     file_index = None
     stride = None

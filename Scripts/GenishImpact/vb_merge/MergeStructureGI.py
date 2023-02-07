@@ -25,9 +25,6 @@ RELATED_VB_INDEX_LIST = []  # The related file number indices from your input vb
 # 000002,000003, use this to confirm which file should be moved to output folder.
 
 WORK_DIR = None  # for setting work dir
-GLOBAL_ROOT_VS = None  # the vertex shader which contains character's animation information.
-GLOBAL_INPUT_IB = None  # the ib file hash you want to vb_merge.
-GLOBAL_INPUT_VB = None  # the vb file hash you want to vb_merge,which contains the real TEXCOORD info.
 
 
 class HeaderInfo:
