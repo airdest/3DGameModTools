@@ -606,7 +606,7 @@ def get_header_info_by_elementnames(output_element_list):
         elif element_name.endswith(b"COLOR"):
             element.semantic_index = b"0"
             element.format = b"R8G8B8A8_UNORM"
-            element.byte_width = 16
+            element.byte_width = 4
         elif element_name.endswith(b"TEXCOORD"):
             element.semantic_index = b"0"
             element.format = b"R32G32_FLOAT"

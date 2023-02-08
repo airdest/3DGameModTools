@@ -104,14 +104,14 @@ def get_header_info(vb_file_name):
 
 if __name__ == "__main__":
     # 设置工作目录
-    work_dir = "C:/Users/Administrator/Desktop/SplitTest/"
+    work_dir = "C:/Users/Administrator/Desktop/yuanshenceshi/"
     os.chdir(work_dir)
 
     # 设置常量
-    GLOBAL_ELEMENT_NUMBER = b"6"
+    GLOBAL_ELEMENT_NUMBER = b"7"
 
     # 各文件名称
-    source_name = "guqinghan"
+    source_name = "zhujue"
     vb_name = source_name + ".vb"
     fmt_name = source_name + ".fmt"
     ib_name = source_name + ".ib"
@@ -174,6 +174,7 @@ if __name__ == "__main__":
 
     for index in range(len(width_list)):
         for i in range(vertex_count):
+            # TODO POSITION
             # POSITION
             if index == 0:
                 vb0_vertex_data[i].append(vertex_data_list[i][0])
@@ -183,18 +184,25 @@ if __name__ == "__main__":
             # TANGENT
             if index == 2:
                 vb0_vertex_data[i].append(vertex_data_list[i][2])
-            # COLOR
+
+            # TODO BLEND
+            # BLENDWEIGHT
             if index == 3:
-                vb0_vertex_data[i].append(vertex_data_list[i][3])
-            # TEXCOORD
+                vb1_vertex_data[i].append(vertex_data_list[i][3])
+            # BLENDINDICES
             if index == 4:
                 vb1_vertex_data[i].append(vertex_data_list[i][4])
 
+            # TODO TEXCOORD 但为什么stride是12？？？难道COLOR不需要？
+            # COLOR
             if index == 5:
-                vb0_vertex_data[i].append(vertex_data_list[i][5])
+                vb2_vertex_data[i].append(vertex_data_list[i][5])
+            # TEXCOORD
             if index == 6:
-                vb0_vertex_data[i].append(vertex_data_list[i][6])
-
+                vb2_vertex_data[i].append(vertex_data_list[i][6])
+            # TEXCOORD1
+            if index == 7:
+                vb2_vertex_data[i].append(vertex_data_list[i][7])
 
 
     vb0_bytes = b""
@@ -205,18 +213,18 @@ if __name__ == "__main__":
     for vertex_data in vb1_vertex_data:
         for data in vertex_data:
             vb1_bytes = vb1_bytes + data
-    # vb2_bytes = b""
-    # for vertex_data in vb2_vertex_data:
-    #     for data in vertex_data:
-    #         vb2_bytes = vb2_bytes + data
+    vb2_bytes = b""
+    for vertex_data in vb2_vertex_data:
+        for data in vertex_data:
+            vb2_bytes = vb2_bytes + data
 
-    output_vb0_filename = source_name + ".vb0"
-    output_vb1_filename = source_name + ".vb1"
-    # output_vb2_filename = source_name + ".vb2"
+    output_vb0_filename = source_name + "_POSITION.vb0"
+    output_vb1_filename = source_name + "_BLEND.vb1"
+    output_vb2_filename = source_name + "_TEXCOORD.vb2"
 
     with open(output_vb0_filename, "wb+") as output_vb0_file:
         output_vb0_file.write(vb0_bytes)
     with open(output_vb1_filename, "wb+") as output_vb1_file:
         output_vb1_file.write(vb1_bytes)
-    # with open(output_vb2_filename, "wb+") as output_vb2_file:
-    #     output_vb2_file.write(vb2_bytes)
+    with open(output_vb2_filename, "wb+") as output_vb2_file:
+        output_vb2_file.write(vb2_bytes)

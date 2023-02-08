@@ -23,15 +23,15 @@ class Element:
         if self.semantic_name == b"TANGENT":
             self.byte_width = 16
         if self.semantic_name == b"COLOR":
-            self.byte_width = 16
+            self.byte_width = 4
         if self.semantic_name == b"TEXCOORD":
             if self.semantic_index == b"0":
                 self.byte_width = 8
             else:
-                self.byte_width = 16
+                self.byte_width = 8
                 # TODO 测试它的原始R8G8B8A8_UNORM 是否能正确导入
                 # element.format = b"R32G32B32A32_FLOAT"
-        if self.semantic_name == b"BLENDWEIGHTS":
+        if self.semantic_name == b"BLENDWEIGHT":
             self.byte_width = 16
         if self.semantic_name == b"BLENDINDICES":
             self.byte_width = 16
