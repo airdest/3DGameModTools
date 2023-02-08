@@ -93,9 +93,18 @@ def get_header_info(vb_file_name, max_element_number):
     return header_info
 
 
-def read_vertex_data_chunk_list_gracefully(file_index, read_element_list):
+def read_vertex_data_chunk_list_gracefully(file_index, read_element_list,only_vb1=False,  sanity_check=False):
+    """
+    :param file_index:  要读取的文件索引
+    :param read_element_list:  要读取的element列表
+    :param sanity_check: 是否检查第一行，来去除冗余的数据
+    :return:
+    """
     # 根据接收到的index，获取vb文件列表
-    vb_filenames = sorted(glob.glob(file_index + '-vb*txt'))
+    if only_vb1:
+        vb_filenames = sorted(glob.glob(file_index + '-vb1*txt'))
+    else:
+        vb_filenames = sorted(glob.glob(file_index + '-vb*txt'))
 
     header_info = get_header_info(vb_filenames[0], b"9")
     vertex_count = header_info.vertex_count
@@ -104,7 +113,7 @@ def read_vertex_data_chunk_list_gracefully(file_index, read_element_list):
     # vertex data 列表 ,这里要注意，如果使用[VertexData()] * int(str(vertex_count.decode())) 则创建出的列表所有元素都是同一个元素
     vertex_data_chunk_list = [[] for i in range(int(str(vertex_count.decode())))]
 
-    # 最终的vertex_data_chunk
+    # 临时的vertex_data_chunk
     vertex_data_chunk = []
 
     chunk_index = 0
@@ -155,6 +164,31 @@ def read_vertex_data_chunk_list_gracefully(file_index, read_element_list):
                 new_vertex_data_chunk.append(vertex_data)
         new_vertex_data_chunk_list.append(new_vertex_data_chunk)
     vertex_data_chunk_list = new_vertex_data_chunk_list
+
+    # TODO 检查TEXCOORD并去除重复值的内容
+    if sanity_check:
+        vertex_data_chunk_check = vertex_data_chunk_list[0]
+        # 统计每种data出现的次数
+        repeat_value_time = {}
+        for vertex_data in vertex_data_chunk_check:
+            if repeat_value_time.get(vertex_data.data) is None:
+                repeat_value_time[vertex_data.data] = 1
+            else:
+                repeat_value_time[vertex_data.data] = repeat_value_time[vertex_data.data] + 1
+        # 根据data出现的次数，确定唯一的那些元素名称
+        unique_element_names = []
+        for vertex_data in vertex_data_chunk_check:
+            if repeat_value_time.get(vertex_data.data) == 1:
+                unique_element_names.append(vertex_data.element_name)
+        # 根据唯一的元素名称,保留vertex_data
+        new_vertex_data_chunk_list = []
+        for vertex_data_chunk in vertex_data_chunk_list:
+            new_vertex_data_chunk = []
+            for vertex_data in vertex_data_chunk:
+                if vertex_data.element_name in unique_element_names:
+                    new_vertex_data_chunk.append(vertex_data)
+            new_vertex_data_chunk_list.append(new_vertex_data_chunk)
+        vertex_data_chunk_list = new_vertex_data_chunk_list
 
     # 根据传进来的要读取element_list,保留部分内容
     # TODO 优化，先统计可以输出的元素的索引，再遍历，把对应索引放到新的列表不就行了，节省很多资源
@@ -245,25 +279,7 @@ def output_model_txt(vb_file_info):
     output_file.close()
 
 
-def is_pointlist_file(filename):
-    ib_file = open(filename, "rb")
-    ib_file_size = os.path.getsize(filename)
-    pointlist_flag = False
-    count = 0
-    while ib_file.tell() <= ib_file_size:
-        line = ib_file.readline()
-        # 因为topology固定在第四行出现，所以如果读取到了第五行，说明没发现pointlist，就可以停止了
-        count = count + 1
-        if count > 5:
-            break
-        if line.startswith(b"topology: "):
-            topology = line[line.find(b"topology: ") + b"topology: ".__len__():line.find(b"\r\n")]
-            if topology == b"pointlist":
-                pointlist_flag = True
-                break
-    # 最后肯定要关闭文件
-    ib_file.close()
-    return pointlist_flag
+
 
 
 def move_related_files(move_dds=True, move_vscb=True,move_pscb=True):
@@ -309,126 +325,56 @@ def move_related_files(move_dds=True, move_vscb=True,move_pscb=True):
                         # print("正在移动： " + filename + " ....")
                         shutil.copy2(filename, 'output/' + filename)
 
+def is_pointlist_file(filename):
+    ib_file = open(filename, "rb")
+    ib_file_size = os.path.getsize(filename)
+    get_topology = None
+    count = 0
+    while ib_file.tell() <= ib_file_size:
+        line = ib_file.readline()
+        # 因为topology固定在第四行出现，所以如果读取到了第五行，说明没发现pointlist，就可以停止了
+        count = count + 1
+        if count > 5:
+            break
+        if line.startswith(b"topology: "):
+            topology = line[line.find(b"topology: ") + b"topology: ".__len__():line.find(b"\r\n")]
+            if topology == b"pointlist":
+                get_topology = b"pointlist"
+                break
+            if topology == b"trianglelist":
+                get_topology = b"trianglelist"
+                break
+    # 最后肯定要关闭文件
+    ib_file.close()
+    return get_topology
 
-def start_merge(input_ib_hash, root_vs="653c63ba4a73ca8b"):
+
+def start_merge_files(input_vb_hash, root_vs="653c63ba4a73ca8b"):
     # 文件开头的索引数字
     indices = sorted([re.findall('^\d+', x)[0] for x in glob.glob('*-vb0*txt')])
-
-    # 分别装载pointlist技术和triangle技术
-    pointlist_topology = []
-    trianglelist_topology = []
-
-    for index_number in range(len(indices)):
-        # 获取IB文件列表，要么没有，要么只有一个,如果不存在ib文件，则直接跳过此索引不进行处理
-        ib_files = glob.glob(indices[index_number] + '-ib*txt')
-        has_ib_file = True
-        if ib_files.__len__() == 0:
-            has_ib_file = False
-
-        # 获取VB文件列表，如果没有则直接跳过此索引不处理
-        vb_files = glob.glob(indices[index_number] + '-vb*txt')
-        has_vb_file = True
-        if vb_files.__len__() == 0:
-            has_vb_file = False
-
-        # 默认不是pointlist，后续条件判断决定最终结果
-        pointlist_flag = False
-
-        # 如果ib和vb都没有，那就可以跳过了
-        if not has_ib_file and not has_vb_file:
-            continue
-
-        if not has_ib_file and has_vb_file:
-            pointlist_flag = True
-
-        # 首先获取当前index的所有VB文件的列表
-        vb_filenames = sorted(glob.glob(indices[index_number] + '-vb*txt'))
-
-        # 获取ib文件名并输出
-        ib_filename = ""
-        if glob.glob(indices[index_number] + '-ib*txt').__len__() != 0:
-            ib_filename = str(glob.glob(indices[index_number] + '-ib*txt')[0])
-        else:
-            print("特殊情况，无ib文件")
-        print("正在处理: " + indices[index_number] + "  ....")
-
-        # 把这个ib的index对应的所有VB文件的内容融合到一个单独的VB文件中
-        # 初始化并读取第一个vb文件的header部分信息，因为所有vb文件的header部分长得都一样，所以默认用vb0来读取
-        first_vb_filename = vb_filenames[0]
-
-        # 判断是pointlsit还是trianglist
-        if has_ib_file:
-            pointlist_flag = is_pointlist_file(ib_filename)
-
-        # 这里要区别开进行处理，pointlist是9,trianglelist是7
-        if pointlist_flag:
-            header_info = get_header_info(first_vb_filename, b"9")
-        else:
-            header_info = get_header_info(first_vb_filename, b"7")
-
-
-        # 设置当前所属Index
-        header_info.file_index = indices[index_number]
-
-        # 这里如果是pointlist文件，就加入专属列表，如果是tranglelist，就加入tranglist列表
-        # 这里是pointlist的基础上，文件名中还必须包含根源VB，可能因为正确的blendwidth 和 blendindices是包含在根源VB里的
-        if pointlist_flag and (ib_filename.__contains__(root_vs) or first_vb_filename.__contains__(root_vs)):
-            pointlist_vb = VbFileInfo()
-            pointlist_vb.header_info = header_info
-            pointlist_topology.append(pointlist_vb)
-        # 这里ib的文件名还要包含我们指定的ib，限制范围，防止出现找到多个pointlist
-        elif not pointlist_flag and ib_filename.__contains__(input_ib_hash):
-            trianglelist_vb = VbFileInfo()
-            trianglelist_vb.header_info = header_info
-            trianglelist_topology.append(trianglelist_vb)
-            # 复制ib文件到output目录
-            # shutil.copy2(ib_filename, 'output/' + ib_filename)
-        else:
-            # print("此ib文件与设定的IB输入不同，不做处理")
-            pass
-
-    # 选举机制，首先获取所有可能的pointlist的索引
-    print("------------------------------------------------")
-    print("选举pointlist技术的最终索引列表")
-
     pointlist_indices = []
     trianglelist_indices = []
 
-    for triangle_vb in trianglelist_topology:
-        vertex_count = triangle_vb.header_info.vertex_count
+    # 1.首先获取所有的pointlist和trianglelist的vb0文件对应索引
+    for index in range(len(indices)):
+        vb0_filename = glob.glob(indices[index] + '-vb0*txt')[0]
+        topology = is_pointlist_file(vb0_filename)
 
-        # 寻找对应vertex_count长度的pointlist
-        right_pointlist_vb = None
-        count = 0
-        for pointlist_vb in pointlist_topology:
-            if vertex_count == pointlist_vb.header_info.vertex_count:
-                right_pointlist_vb = pointlist_vb
-                count = count + 1
+        if topology == b"pointlist":
+            # 过滤，必须包含root_vs
+            if root_vs in vb0_filename:
+                pointlist_indices.append(indices[index])
 
-        print("--------------------------------------------------------")
-        print("当前正在处理：" + str(triangle_vb.header_info.file_index))
+        if topology == b"trianglelist":
+            # 过滤，必须包含输入的vb，注意是vb而不是ib
+            if input_vb_hash in vb0_filename:
+                trianglelist_indices.append(indices[index])
 
-        if right_pointlist_vb is None:
-            # 这里未找到对应pointlist也要加入，因为这个vb中可能包含正确的TEXCOORD信息。
-            trianglelist_indices.append(triangle_vb.header_info.file_index)
-        elif count == 1:
-            pointlist_indices.append(right_pointlist_vb.header_info.file_index)
-            trianglelist_indices.append(triangle_vb.header_info.file_index)
-        else:
-            # 这里触发找到了多个对应pointlist的原因是trianglelist那里我们没有对输入的vb做限制
-            print("找到了多个对应的pointlist？？？")
-            exit(1)
-
-    # TODO 这里找到的pointlist可能是重复的，需要去重
-    new_pointlist_indices = []
-    for pointlist_index in pointlist_indices:
-        if pointlist_index not in new_pointlist_indices:
-            new_pointlist_indices.append(pointlist_index)
-    pointlist_indices = new_pointlist_indices
-
-    print(new_pointlist_indices)
+    print(pointlist_indices)
     print(trianglelist_indices)
-    # TODO 这里要注意，上面的代码效率很低，现在暂时不优化，后面再搞优化
+
+    # TODO 根据vertex_count长度，过滤掉pointlit里的无关索引
+
 
     # 要从pointlist中读取的element,这里只读一个文件
     read_pointlist_element_list = [b"POSITION", b"NORMAL", b"TANGENT", b"BLENDWEIGHT", b"BLENDINDICES"]
@@ -438,37 +384,39 @@ def start_merge(input_ib_hash, root_vs="653c63ba4a73ca8b"):
     read_trianglelist_element_list = [b"COLOR", b"TEXCOORD", b"TEXCOORD1"]
     final_trianglelist_vertex_data_chunk_list_list = []
     for trianglelist_index in trianglelist_indices:
-        vertex_data_chunk_list_tmp = read_vertex_data_chunk_list_gracefully(trianglelist_index, read_trianglelist_element_list)
+        vertex_data_chunk_list_tmp = read_vertex_data_chunk_list_gracefully(trianglelist_index, read_trianglelist_element_list, only_vb1=True, sanity_check=True)
         final_trianglelist_vertex_data_chunk_list_list.append(vertex_data_chunk_list_tmp)
-    print(len(final_trianglelist_vertex_data_chunk_list_list))
 
     # TODO 读取完trianglelist的vertex-data后，进行格式检查，从而找出最终的element正确的vertex-data
+    # TODO 这一步格式检查不能兼容只有TEXCOORD而没有TEXCOORD1的情况
+    """
+    判断是否为正常TEXCOOORD的原理：
+    首先读取所有的VB1文件
+    如果同时存在TEXCOORD1和TEXCOORD，则同一index文件的TEXCOORD和TEXCOORD1的值不能重复
+    如果只存在TEXCOORD，则正确
+    """
     repeat_vertex_data_chunk_list_list = []
+
     for final_trianglelist_vertex_data_chunk_list in final_trianglelist_vertex_data_chunk_list_list:
         first_vertex_data_chunk = final_trianglelist_vertex_data_chunk_list[0]
-        length = len(first_vertex_data_chunk)
-
-        unique_data_list = []
-        new_vertex_data_chunk = []
+        # 首先检查是否含有COLOR和TEXCOORD，如果没有就continue
+        element_name_list = []
+        found_invalid_texcoord = False
         for vertex_data in first_vertex_data_chunk:
-            if vertex_data.data not in unique_data_list:
-                unique_data_list.append(vertex_data.data)
-                new_vertex_data_chunk.append(vertex_data)
-
-        right_texcoord = False
-        right_texcoord1 = False
-        if len(unique_data_list) == length:
-            for vertex_data in new_vertex_data_chunk:
-                if len(str(vertex_data.data.decode()).split(",")) == 2 and str(vertex_data.element_name.decode()).endswith("TEXCOORD"):
-                    right_texcoord = True
-
-                if len(str(vertex_data.data.decode()).split(",")) == 2 and str(vertex_data.element_name.decode()).endswith("TEXCOORD1"):
-                    right_texcoord1 = True
-
-        if right_texcoord and right_texcoord1:
-            repeat_vertex_data_chunk_list_list.append(final_trianglelist_vertex_data_chunk_list)
-        else:
+            element_name_list.append(vertex_data.element_name)
+            datas = str(vertex_data.data.decode()).split(",")
+            if vertex_data.element_name.startswith(b"TEXCOORD") and len(datas) > 2:
+                found_invalid_texcoord = True
+        if found_invalid_texcoord:
             continue
+        if b"TEXCOORD" not in element_name_list or b"COLOR" not in element_name_list:
+            continue
+        # for vertex_data in first_vertex_data_chunk:
+        #     print(vertex_data.element_name)
+        #     print(vertex_data.data)
+        # print("-----------------------------------")
+        repeat_vertex_data_chunk_list_list.append(final_trianglelist_vertex_data_chunk_list)
+
 
     # 找出之后进行去重
     final_trianglelist_vertex_data_chunk_list_list = []
@@ -478,17 +426,23 @@ def start_merge(input_ib_hash, root_vs="653c63ba4a73ca8b"):
         first_vertex_data_chunk = final_trianglelist_vertex_data_chunk_list[0]
         first_vertex_data = first_vertex_data_chunk[0]
 
-        if first_vertex_data.data not in repeat_check:
-            repeat_check.append(first_vertex_data.data)
-            final_trianglelist_vertex_data_chunk_list_list.append(final_trianglelist_vertex_data_chunk_list)
+        # 首先这个list长度必须得和pointlist长度一致才能加入，不然不允许加入
+        if len(final_trianglelist_vertex_data_chunk_list) == len(pointlist_vertex_data_chunk_list):
+            if first_vertex_data.data not in repeat_check:
+                repeat_check.append(first_vertex_data.data)
+                final_trianglelist_vertex_data_chunk_list_list.append(final_trianglelist_vertex_data_chunk_list)
 
-    print("去重后的长度：")
-    print(len(final_trianglelist_vertex_data_chunk_list_list))
+
+    if len(final_trianglelist_vertex_data_chunk_list_list) != 1:
+        print("去重后的长度应为1，这里不为1所以错误退出")
+        exit(1)
     # 去重之后只有一个，所以取0
     final_trianglelist_vertex_data_chunk_list = final_trianglelist_vertex_data_chunk_list_list[0]
 
     # 根据output_element_list，拼接出一个最终的header_info
-    output_element_list = [b"POSITION", b"NORMAL", b"TANGENT", b"BLENDWEIGHT", b"BLENDINDICES", b"COLOR", b"TEXCOORD", b"TEXCOORD1"]
+    output_element_list = [b"POSITION", b"NORMAL", b"TANGENT", b"BLENDWEIGHT", b"BLENDINDICES", b"COLOR", b"TEXCOORD"]
+    # TODO 这里不够智能，应该根据实际上面vertex-data那个list里的东西生成
+
     header_info = get_header_info_by_elementnames(output_element_list)
     # 设置vertex count
     header_info.vertex_count = str(len(final_trianglelist_vertex_data_chunk_list)).encode()
@@ -500,8 +454,10 @@ def start_merge(input_ib_hash, root_vs="653c63ba4a73ca8b"):
 
     final_vertex_data_chunk_list = [[] for i in range(int(str(header_info.vertex_count.decode())))]
     for index in range(len(pointlist_vertex_data_chunk_list)):
-        final_vertex_data_chunk_list[index] = final_vertex_data_chunk_list[index] + pointlist_vertex_data_chunk_list[index]
-        final_vertex_data_chunk_list[index] = final_vertex_data_chunk_list[index] + final_trianglelist_vertex_data_chunk_list[index]
+        final_vertex_data_chunk_list[index] = final_vertex_data_chunk_list[index] + pointlist_vertex_data_chunk_list[
+            index]
+        final_vertex_data_chunk_list[index] = final_vertex_data_chunk_list[index] + \
+                                              final_trianglelist_vertex_data_chunk_list[index]
 
     # TODO 拼接出来之后，要设置每个VertexData的alignedbyte为正确值。
     # TODO 顺便修复element_list中出现TEXCOORD1的问题
@@ -523,10 +479,6 @@ def start_merge(input_ib_hash, root_vs="653c63ba4a73ca8b"):
             new_vertex_data_chunk.append(vertex_data)
         new_final_vertex_data_chunk_list.append(new_vertex_data_chunk)
     final_vertex_data_chunk_list = new_final_vertex_data_chunk_list
-
-
-
-
 
     output_vb_fileinfo = VbFileInfo()
     output_vb_fileinfo.header_info = header_info
@@ -637,13 +589,13 @@ def get_header_info_by_elementnames(output_element_list):
 
 
 if __name__ == "__main__":
-    # TODO genshin的脚本命令 python genshin_3dmigoto_collect.py -vb dfb54407 -n zhujue
     # setting work dir
-    os.chdir("C:/Users/Administrator/Desktop/FrameAnalysis-2023-02-06-180919/")
+    os.chdir("C:/Users/Administrator/Desktop/FrameAnalysis-2023-02-08-125941/")
     if not os.path.exists('output'):
         os.mkdir('output')
 
-    input_ib_hash = "dfb54407"  # 基础角色
-    start_merge(input_ib_hash)
+    input_ib_hash = "8cc9274b"  # 基础角色ib
+    input_vb_hash = "da0adf2f"  # 基础角色vb
+    start_merge_files(input_vb_hash)
     print("全部转换完成！")
 

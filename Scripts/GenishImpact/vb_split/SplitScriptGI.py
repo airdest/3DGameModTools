@@ -2,7 +2,7 @@ import glob
 import os
 import re
 import json
-from SplitStructureNaraka import *
+from SplitStructureGI import *
 
 GLOBAL_ELEMENT_NUMBER = None
 
@@ -108,10 +108,10 @@ if __name__ == "__main__":
     os.chdir(work_dir)
 
     # 设置常量
-    GLOBAL_ELEMENT_NUMBER = b"7"
+    GLOBAL_ELEMENT_NUMBER = b"6"
 
     # 各文件名称
-    source_name = "zhujue"
+    source_name = "amber_final"
     vb_name = source_name + ".vb"
     fmt_name = source_name + ".fmt"
     ib_name = source_name + ".ib"
