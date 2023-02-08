@@ -68,7 +68,7 @@ class Element:
             self.byte_width = 16
             self.format = b"R32G32B32A32_FLOAT"
         if self.semantic_name == b"COLOR":
-            self.byte_width = 16
+            self.byte_width = 4
             self.format = b"R8G8B8A8_UNORM"
         if self.semantic_name == b"TEXCOORD":
             if self.semantic_index == b"0":
