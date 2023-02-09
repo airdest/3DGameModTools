@@ -22,7 +22,7 @@ kook邀请链接：https://kook.top/0CZ8dh
 
 特别鸣谢Helix mod社区, 以及chiri开源的3dmigoto！
 
-特别鸣谢SilentNightSound的GIMI项目所提供的学习参考！
+特别鸣谢SilentNightSound的GIMI项目所提供的学习参考以及GIMI版本的3dmigoto，它让许多游戏都可以轻松实现18+mod，使任意资源替换成为可能！
 
 特别鸣谢爱发电所有小伙伴的支持！你们的支持是我前进最大的动力！
 

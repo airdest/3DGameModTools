@@ -606,5 +606,6 @@ if __name__ == "__main__":
     start_merge_files(input_ib_hash, root_vs="e8425f64cfb887cd")
     print("全部转换完成！")
 
-    # TODO 导入到游戏后，模型是躺着的，怎样才能正确的导入到游戏？？？
+    # TODO 读取pointlist后生成draw ib,texcoord vb,position vb,blend vb等等，然后输出到一个ini文件
+    
 

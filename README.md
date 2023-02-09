@@ -17,7 +17,8 @@ and take no responsibility for any consequences as a result if you do.
 # Acknowledgements
 Thanks a lot to bob3b, DarkStarSword, for tutorial and code reference!
 
-Thanks alot to Helixmod, and chiri for open sourcing 3dmigoto！
+Thanks a lot to Helixmod, and chiri for open sourcing 3dmigoto！
 
-Thanks for SilentNightSound'GIMI for code reference!
+Special thanks for SilentNightSound'GIMI for code reference and his GIMI version 3dmigoto
+which can make a large amount of game to enable 18+ mod!
 
