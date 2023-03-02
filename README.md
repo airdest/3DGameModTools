@@ -2,7 +2,7 @@
 
 If You have any question or advice, 
 
-You can open an issue on github or give a feedback on discord, Thank you !
+You can open an issue on github, Thank you !
 
 
 # DISCLAIMER

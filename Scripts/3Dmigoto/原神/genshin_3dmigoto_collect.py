@@ -11,6 +11,7 @@ import shutil
 import json
 import re
 
+
 def main():
     parser = argparse.ArgumentParser(description="Collects and compiles model data from 3dmigoto frame dumps")
     # TODO vb的hash地址，ib地址好像也行
